@@ -1,0 +1,36 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <PlatformTarget>x64</PlatformTarget>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <!-- AUTOCOPY -->
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Copy SourceFiles="$(OutputPath)$(AssemblyName).dll"
+          DestinationFolder="/media/1TB/SteamLibrary/steamapps/common/Just Shapes &amp; Beats/Mods/" />
+  </Target>
+
+  <ItemGroup>
+    <Reference Include="/media/1TB/SteamLibrary/steamapps/common/Just Shapes &amp; Beats/MelonLoader/Il2CppAssemblies/*.dll">
+      <Private>false</Private>
+    </Reference>
+
+  <Reference Include="/media/1TB/SteamLibrary/steamapps/common/Just Shapes &amp; Beats/MelonLoader/net6/*.dll">
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+<!--
+  <ItemGroup>
+    <EmbeddedResource Include="resources\test_image.png" />
+  </ItemGroup>
+-->
+
+  <ItemGroup>
+    <Compile Remove="deprecated\**" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,12 @@
+/home/dveroeb/Документы/jsb_new/obj/Debug/net6.0/jsb_new.csproj.AssemblyReference.cache
+/home/dveroeb/Документы/jsb_new/obj/Debug/net6.0/jsb_new.GeneratedMSBuildEditorConfig.editorconfig
+/home/dveroeb/Документы/jsb_new/obj/Debug/net6.0/jsb_new.AssemblyInfoInputs.cache
+/home/dveroeb/Документы/jsb_new/obj/Debug/net6.0/jsb_new.AssemblyInfo.cs
+/home/dveroeb/Документы/jsb_new/obj/Debug/net6.0/jsb_new.csproj.CoreCompileInputs.cache
+/home/dveroeb/Документы/jsb_new/bin/Debug/net6.0/jsb_new.deps.json
+/home/dveroeb/Документы/jsb_new/bin/Debug/net6.0/jsb_new.dll
+/home/dveroeb/Документы/jsb_new/bin/Debug/net6.0/jsb_new.pdb
+/home/dveroeb/Документы/jsb_new/obj/Debug/net6.0/jsb_new.dll
+/home/dveroeb/Документы/jsb_new/obj/Debug/net6.0/refint/jsb_new.dll
+/home/dveroeb/Документы/jsb_new/obj/Debug/net6.0/jsb_new.pdb
+/home/dveroeb/Документы/jsb_new/obj/Debug/net6.0/ref/jsb_new.dll
