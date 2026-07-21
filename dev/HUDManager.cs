@@ -78,7 +78,6 @@ namespace jsb_new
 
         private static GUIStyle? _labelStyle;
         private static GUIStyle? _boxStyle;
-        private static GUIStyle? _notifStyle;
 
         private static string _lastDumpedSongId = "";
         private static AudioSource? _cachedSource;
@@ -92,6 +91,7 @@ namespace jsb_new
             public float Elapsed;
             public HUDPosition Position; // <--- Позиция всплывающего тоста
             public float Alpha;          // Плавная прозрачность конкретного тоста
+            public int FontSize;         // Размер шрифта конкретного тоста
         }
 
         private static readonly Queue<TrainerNotification> _notificationQueue = new Queue<TrainerNotification>();
@@ -224,18 +224,15 @@ namespace jsb_new
         }
 
         // Калькулятор динамического авто-размера для всплывающих баннеров (Toasts) [4]
-        private static Vector2 GetNotifSize(string text)
+        private static Vector2 GetNotifSize(string text, int fontSize)
         {
-            if (_notifStyle == null)
+            GUIStyle style = new GUIStyle(GUI.skin.label)
             {
-                _notifStyle = new GUIStyle(GUI.skin.label)
-                {
-                    fontSize = 16,
-                    fontStyle = FontStyle.Bold,
-                    alignment = TextAnchor.MiddleCenter
-                };
-            }
-            Vector2 size = _notifStyle.CalcSize(new GUIContent(text));
+                fontSize = fontSize,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter
+            };
+            Vector2 size = style.CalcSize(new GUIContent(text));
             float paddingX = 30f;
             float paddingY = 15f;
             return new Vector2(Mathf.Max(250f, size.x + paddingX), Mathf.Max(40f, size.y + paddingY));
@@ -257,7 +254,7 @@ namespace jsb_new
         }
 
         // Изменен сигнатура: добавлен необязательный параметр положения тоста на экране (по умолчанию снизу по центру)
-        public static void CreateToast(string text, Color color, float duration = 2.5f, HUDPosition position = HUDPosition.BottomCenter)
+        public static void CreateToast(string text, Color color, float duration = 2.5f, HUDPosition position = HUDPosition.BottomCenter, int fontSize = 18)
         {
             _notificationQueue.Enqueue(new TrainerNotification {
                 Text = text,
@@ -265,7 +262,8 @@ namespace jsb_new
                 Duration = duration,
                 Elapsed = 0f,
                 Position = position,
-                Alpha = 0f
+                Alpha = 0f,
+                FontSize = fontSize
             });
         }
 
@@ -451,18 +449,15 @@ namespace jsb_new
 
                 if (notif.Alpha > 0.001f)
                 {
-                    if (_notifStyle == null)
+                    GUIStyle notifStyle = new GUIStyle(GUI.skin.label)
                     {
-                        _notifStyle = new GUIStyle(GUI.skin.label)
-                        {
-                            fontSize = 16,
-                            fontStyle = FontStyle.Bold,
-                            alignment = TextAnchor.MiddleCenter
-                        };
-                    }
+                        fontSize = notif.FontSize,
+                        fontStyle = FontStyle.Bold,
+                        alignment = TextAnchor.MiddleCenter
+                    };
 
                     // Просим калькулятор рассчитать точный размер тоста под его текст
-                    Vector2 size = GetNotifSize(notif.Text);
+                    Vector2 size = GetNotifSize(notif.Text, notif.FontSize);
                     float w = size.x;
                     float h = size.y;
 
@@ -502,7 +497,7 @@ namespace jsb_new
                         for (int s = 0; s < stackIndex; s++)
                         {
                             var prevNotif = _activeNotifications[stackIndices[s]];
-                            y += GetNotifSize(prevNotif.Text).y + spacing;
+                            y += GetNotifSize(prevNotif.Text, prevNotif.FontSize).y + spacing;
                         }
                     }
                     else if (notif.Position == HUDPosition.BottomLeft || notif.Position == HUDPosition.BottomCenter || notif.Position == HUDPosition.BottomRight)
@@ -512,7 +507,7 @@ namespace jsb_new
                         for (int s = 0; s <= stackIndex; s++)
                         {
                             var curNotif = _activeNotifications[stackIndices[s]];
-                            y -= GetNotifSize(curNotif.Text).y;
+                            y -= GetNotifSize(curNotif.Text, curNotif.FontSize).y;
                             if (s < stackIndex) y -= spacing;
                         }
                     }
@@ -523,7 +518,7 @@ namespace jsb_new
                         for (int s = 0; s < stackIndices.Count; s++)
                         {
                             var curNotif = _activeNotifications[stackIndices[s]];
-                            totalHeight += GetNotifSize(curNotif.Text).y;
+                            totalHeight += GetNotifSize(curNotif.Text, curNotif.FontSize).y;
                             if (s < stackIndices.Count - 1) totalHeight += spacing;
                         }
 
@@ -532,7 +527,7 @@ namespace jsb_new
                         for (int s = 0; s < stackIndex; s++)
                         {
                             var prevNotif = _activeNotifications[stackIndices[s]];
-                            y += GetNotifSize(prevNotif.Text).y + spacing;
+                            y += GetNotifSize(prevNotif.Text, prevNotif.FontSize).y + spacing;
                         }
                     }
 
@@ -559,9 +554,9 @@ namespace jsb_new
                     // Отрисовка текста тоста
                     Color txtCol = notif.TextColor;
                     txtCol.a = notif.Alpha;
-                    _notifStyle.normal.textColor = txtCol;
+                    notifStyle.normal.textColor = txtCol;
 
-                    GUI.Label(rect, notif.Text, _notifStyle);
+                    GUI.Label(rect, notif.Text, notifStyle);
                 }
 
                 _activeNotifications[i] = notif; // Сохраняем измененную структуру обратно

@@ -31,6 +31,7 @@ namespace jsb_new
             {
                 if (GameScene.instance?.logicManager == null)
                 {
+                    HUDManager.CreateToast("NOT IN A LEVEL.", Color.red, 5.0f);
                     DebugStrings.Log("Konfig: not in a level");
                     return;
                 }
@@ -45,6 +46,7 @@ namespace jsb_new
 
                 if (result == null)
                 {
+                    HUDManager.CreateToast("NOT IN MULTIPLAYER.", Color.red, 5.0f);
                     DebugStrings.Log("Konfig: not in multiplayer (use Esc/O instead)");
                     return;
                 }
@@ -58,6 +60,7 @@ namespace jsb_new
                 if (pauseMenu.backToTitleBtn != null)
                     pauseMenu.backToTitleBtn.visible = false;
 
+                HUDManager.CreateToast("Settings menu opened.", Color.green, 3.0f);
                 DebugStrings.Log("Konfig: settings menu opened in multiplayer");
             }
             catch (System.Exception ex)
