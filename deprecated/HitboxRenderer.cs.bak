@@ -9,31 +9,40 @@ namespace jsb_new
 {
     public static class HitboxRenderer
     {
+        // ==================== НАСТРОЙКИ ====================
+        private static bool _enabled = false;
+
         public static bool Enabled
         {
-            get => ModuleRegistry.IsActive("HitboxRenderer");
+            get => _enabled;
             set
             {
-                if (ModuleRegistry.IsActive("HitboxRenderer") == value) return;
-                ModuleRegistry.SetActive("HitboxRenderer", value);
-                VersionInfo.DEBUG_FORCE_ALL_COLLISIONS_VISIBLE = value;
-                DebugStrings.Log($"Hitboxes: {(value ? "ON" : "OFF")}");
+                if (_enabled == value) return;
+                _enabled = value;
+                VersionInfo.DEBUG_FORCE_ALL_COLLISIONS_VISIBLE = _enabled;
+                DebugStrings.Log($"Hitboxes: {(_enabled ? "ON" : "OFF")}");
 
-                if (!value)
+                if (!_enabled)
                     Cleanup();
             }
         }
-
         private static readonly Color DrawColor = Color.yellow;
-        private static readonly Vector2[] CirclePoints;
-        private const int CircleSegments = 18;
 
+        // ==================== ПРЕДВЫЧИСЛЕННЫЕ ТОЧКИ ====================
+        private static readonly Vector2[] CirclePoints;
+        private const int CircleSegments = 32;
+
+        // ==================== КЭШ ====================
+        private static CameraFlash? _cachedFlash;
+        private static MainGame? _cachedMainGame;
+
+        // ==================== РЕНДЕР-РЕСУРСЫ ====================
         private static Mesh? _lineMesh;
         private static Material? _lineMaterial;
         private static readonly List<Line> _lines = new(25000);
         private static Vector3[] _vertexBuffer = new Vector3[16384];
         private static Color32[] _colorBuffer = new Color32[16384];
-        private static int[] _indexBuffer = new int[0];
+        private static int[] _indexBuffer = Array.Empty<int>();
         private static bool _resourcesReady = false;
 
         static HitboxRenderer()
@@ -46,6 +55,7 @@ namespace jsb_new
             }
         }
 
+        // ==================== ИНИЦИАЛИЗАЦИЯ ====================
         public static void Initialize(HarmonyLib.Harmony harmony)
         {
             try
@@ -64,24 +74,9 @@ namespace jsb_new
 
                 var manageColMethod = AccessTools.Method(typeof(DisplayObjectRendererTk2d), "ManageCol");
                 if (manageColMethod != null)
-                    harmony.Patch(manageColMethod, new HarmonyMethod(typeof(HitboxRenderer), nameof(OnManageCol)));
+                    harmony.Patch(manageColMethod, postfix: new HarmonyMethod(typeof(HitboxRenderer), nameof(OnManageCol)));
 
-                ModuleRegistry.RegisterCheckbox("Optional Stuff", "Hitboxes",
-                                                () => Enabled,
-                                                (newValue) => { Enabled = newValue; },
-                                                order: 30
-                );
-
-                HUDManager.CreateHUD(
-                    key: "HitboxRenderer",
-                    textGetter: () => "HITBOXES VISIBLE",
-                                     baseColor: Color.white,
-                                     pulseColor: Color.yellow,
-                                     activeGetter: () => Enabled, // <-- сюда прокидывается актуальное состояние автоматически
-                                     height: 35f
-                );
-
-                DebugStrings.Log("[HitboxRenderer] Initialized.");
+                DebugStrings.Log("[HitboxRenderer] Initialized (clean version, no Beams). Press H to toggle.");
             }
             catch (Exception ex)
             {
@@ -97,10 +92,13 @@ namespace jsb_new
             _lines.Clear();
             _vertexBuffer = new Vector3[16384];
             _colorBuffer = new Color32[16384];
-            _indexBuffer = new int[0];
+            _indexBuffer = Array.Empty<int>();
             _resourcesReady = false;
+            _cachedFlash = null;
+            _cachedMainGame = null;
         }
 
+        // ==================== UPDATE ====================
         public static void Update()
         {
             if (Input.GetKeyDown(KeyCode.H))
@@ -114,15 +112,25 @@ namespace jsb_new
                 return;
             }
 
+            UpdateCachedReferences();
             DrawPlayerHitboxes();
             RenderLines();
         }
 
+        private static void UpdateCachedReferences()
+        {
+            if (_cachedMainGame == null)
+                _cachedMainGame = MainGame.instance;
+
+            if (_cachedFlash == null)
+                _cachedFlash = CameraFlash.mainCamera;
+        }
+
+        // ==================== PLAYER HITBOXES ====================
         private static void DrawPlayerHitboxes()
         {
-            var mainGame = MainGame.instance;
-            if (mainGame == null) return;
-            var scene = mainGame.gameSceneManager?.gameScene;
+            if (_cachedMainGame == null) return;
+            var scene = _cachedMainGame.gameSceneManager?.gameScene;
             if (scene == null) return;
 
             var actorList = scene.heroManager?.actorList;
@@ -148,18 +156,18 @@ namespace jsb_new
 
         private static void DrawCircleComponent(CollisionCircleComponent comp, Circle c)
         {
-            var cam = CameraFlash.mainCamera;
-            if (cam == null || comp.actor == null) return;
+            if (_cachedFlash == null || comp.actor == null) return;
 
             var actor = comp.actor;
             float flashX = actor.px + c.x;
             float flashY = (actor.py + c.y) * -1f;
-            float offset = (cam.px - (cam.actorForTransform?.px ?? 0f)) * 2f;
+            float offset = (_cachedFlash.px - (_cachedFlash.actorForTransform?.px ?? 0f)) * 2f;
 
-            Point p = cam.getCoordInWorld(flashX + 640f, flashY + 360f);
+            Point p = _cachedFlash.getCoordInWorld(flashX + 640f, flashY + 360f);
             AddCircle(p.x - offset, p.y, c.radius);
         }
 
+        // ==================== РЕНДЕР ====================
         private static void RenderLines()
         {
             if (_lines.Count == 0) return;
@@ -239,6 +247,7 @@ namespace jsb_new
             Array.Resize(ref _colorBuffer, newSize);
         }
 
+        // ==================== ДОБАВЛЕНИЕ ЛИНИЙ ====================
         private static void AddLine(Vector3 a, Vector3 b)
         {
             if (_lines.Count >= 25000) return;
@@ -275,18 +284,18 @@ namespace jsb_new
             AddLine(a - perp, b - perp);
         }
 
+        // ==================== ПАТЧИ ====================
         public static bool OnDrawCircle(CollisionCircleComponent __instance, Circle c)
         {
-            if (!Enabled || c == null) return false;
+            if (!_enabled || c == null) return false;
             try
             {
-                var cam = CameraFlash.mainCamera;
-                if (cam == null) return false;
+                if (_cachedFlash == null) return false;
                 float localY = c.y * -1f;
-                Point p = cam.getCoordInWorld(c.x + 640f, localY + 360f);
+                Point p = _cachedFlash.getCoordInWorld(c.x + 640f, localY + 360f);
                 float offset = 0f;
-                if (cam.actorForTransform != null)
-                    offset = (cam.px - cam.actorForTransform.px) * 2f;
+                if (_cachedFlash.actorForTransform != null)
+                    offset = (_cachedFlash.px - _cachedFlash.actorForTransform.px) * 2f;
                 AddCircle(p.x - offset, p.y, c.radius);
             }
             catch (Exception ex) { MelonLogger.Error($"[Hitbox] OnDrawCircle error: {ex.Message}"); }
@@ -295,28 +304,20 @@ namespace jsb_new
 
         public static bool OnDrawCircleWithVelocity(CollisionCircleComponent __instance, Circle c, float vx, float vy)
         {
-            if (!Enabled || c == null) return false;
+            if (!_enabled || c == null) return false;
             try
             {
-                var cam = CameraFlash.mainCamera;
-                if (cam == null) return false;
+                if (_cachedFlash == null) return false;
                 float localY = c.y * -1f;
                 float localVY = vy * -1f;
-
-                Point p1Raw = cam.getCoordInWorld(c.x + 640f, localY + 360f);
-                float p1x = p1Raw.x;
-                float p1y = p1Raw.y;
-
-                Point p2Raw = cam.getCoordInWorld(c.x + vx + 640f, localY + localVY + 360f);
-                float p2x = p2Raw.x;
-                float p2y = p2Raw.y;
-
+                Point p1 = _cachedFlash.getCoordInWorld(c.x + 640f, localY + 360f);
+                Point p2 = _cachedFlash.getCoordInWorld(c.x + vx + 640f, localY + localVY + 360f);
                 float offset = 0f;
-                if (cam.actorForTransform != null)
-                    offset = (cam.px - cam.actorForTransform.px) * 2f;
+                if (_cachedFlash.actorForTransform != null)
+                    offset = (_cachedFlash.px - _cachedFlash.actorForTransform.px) * 2f;
 
-                Vector3 a = new Vector3(p1x - offset, p1y, 0f);
-                Vector3 b = new Vector3(p2x - offset, p2y, 0f);
+                Vector3 a = new Vector3(p1.x - offset, p1.y, 0f);
+                Vector3 b = new Vector3(p2.x - offset, p2.y, 0f);
                 AddCapsule(a, b, c.radius);
             }
             catch (Exception ex) { MelonLogger.Error($"[Hitbox] OnDrawCircleWithVelocity error: {ex.Message}"); }
@@ -325,16 +326,15 @@ namespace jsb_new
 
         public static bool OnDrawRectangle(float x, float y, float scaleX, float scaleY, float rot)
         {
-            if (!Enabled) return false;
+            if (!_enabled) return false;
             try
             {
-                var cam = CameraFlash.mainCamera;
-                if (cam == null) return false;
+                if (_cachedFlash == null) return false;
                 float localY = y * -1f;
-                Point p = cam.getCoordInWorld(x + 640f, localY + 360f);
+                Point p = _cachedFlash.getCoordInWorld(x + 640f, localY + 360f);
                 float offset = 0f;
-                if (cam.actorForTransform != null)
-                    offset = (cam.px - cam.actorForTransform.px) * 2f;
+                if (_cachedFlash.actorForTransform != null)
+                    offset = (_cachedFlash.px - _cachedFlash.actorForTransform.px) * 2f;
 
                 float wx = p.x - offset;
                 float wy = p.y;
@@ -362,23 +362,27 @@ namespace jsb_new
             return false;
         }
 
-        public static bool OnManageCol(DisplayObjectRendererTk2d __instance, DisplayObject d)
+        public static void OnManageCol(DisplayObjectRendererTk2d __instance, DisplayObject d)
         {
-            if (!Enabled || __instance == null || d == null || d.colType != 2) return true;
+            // Если хитбоксы выключены или объект не подходит — просто выходим
+            if (!_enabled || __instance == null || d == null || d.colType != 2) return;
+
             try
             {
                 var rectLines = __instance.rectLines;
-                if (rectLines == null) return true;
+                if (rectLines == null) return;
 
-                rectLines.calculate(d.transform.concatenedMatrix);
-
+                // К этому моменту оригинальный ManageCol уже выполнился
+                // и заполнил rectLines актуальными данными. Нам остается их только нарисовать:
                 AddLine(new Vector3(rectLines.l1.x1, rectLines.l1.y1, 0f), new Vector3(rectLines.l1.x2, rectLines.l1.y2, 0f));
                 AddLine(new Vector3(rectLines.l2.x1, rectLines.l2.y1, 0f), new Vector3(rectLines.l2.x2, rectLines.l2.y2, 0f));
                 AddLine(new Vector3(rectLines.l3.x1, rectLines.l3.y1, 0f), new Vector3(rectLines.l3.x2, rectLines.l3.y2, 0f));
                 AddLine(new Vector3(rectLines.l4.x1, rectLines.l4.y1, 0f), new Vector3(rectLines.l4.x2, rectLines.l4.y2, 0f));
             }
-            catch (Exception ex) { MelonLogger.Error($"[Hitbox] OnManageCol error: {ex.Message}"); }
-            return true;
+            catch (Exception ex)
+            {
+                MelonLogger.Error($"[Hitbox] OnManageCol error: {ex.Message}");
+            }
         }
 
         private static Vector2 RotatePoint(float x, float y, float rot)

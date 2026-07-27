@@ -9,31 +9,36 @@ namespace jsb_new
 {
     public static class HitboxRenderer
     {
+        // ==================== НАСТРОЙКИ ====================
+        private static bool _enabled = false;
+
         public static bool Enabled
         {
-            get => ModuleRegistry.IsActive("HitboxRenderer");
+            get => _enabled;
             set
             {
-                if (ModuleRegistry.IsActive("HitboxRenderer") == value) return;
-                ModuleRegistry.SetActive("HitboxRenderer", value);
-                VersionInfo.DEBUG_FORCE_ALL_COLLISIONS_VISIBLE = value;
-                DebugStrings.Log($"Hitboxes: {(value ? "ON" : "OFF")}");
+                if (_enabled == value) return;
+                _enabled = value;
+                VersionInfo.DEBUG_FORCE_ALL_COLLISIONS_VISIBLE = _enabled;
+                MelonLogger.Msg($"Hitboxes: {(_enabled ? "ON" : "OFF")}");
 
-                if (!value)
+                if (!_enabled)
                     Cleanup();
             }
         }
-
         private static readonly Color DrawColor = Color.yellow;
+
+        // ==================== ПРЕДВЫЧИСЛЕННЫЕ ТОЧКИ ====================
         private static readonly Vector2[] CirclePoints;
         private const int CircleSegments = 18;
 
+        // ==================== РЕНДЕР-РЕСУРСЫ ====================
         private static Mesh? _lineMesh;
         private static Material? _lineMaterial;
         private static readonly List<Line> _lines = new(25000);
         private static Vector3[] _vertexBuffer = new Vector3[16384];
         private static Color32[] _colorBuffer = new Color32[16384];
-        private static int[] _indexBuffer = new int[0];
+        private static int[] _indexBuffer = new int[0]; // Исправлено для старых компиляторов (было Array.Empty)
         private static bool _resourcesReady = false;
 
         static HitboxRenderer()
@@ -46,10 +51,13 @@ namespace jsb_new
             }
         }
 
+        // ==================== ИНИЦИАЛИЗАЦИЯ ====================
         public static void Initialize(HarmonyLib.Harmony harmony)
         {
             try
             {
+                TrainerSettingsBuilder.Initialize(harmony);
+
                 var circleMethod = typeof(CollisionCircleComponent).GetMethod("drawCircle");
                 if (circleMethod != null)
                     harmony.Patch(circleMethod, new HarmonyMethod(typeof(HitboxRenderer), nameof(OnDrawCircle)));
@@ -66,22 +74,12 @@ namespace jsb_new
                 if (manageColMethod != null)
                     harmony.Patch(manageColMethod, new HarmonyMethod(typeof(HitboxRenderer), nameof(OnManageCol)));
 
-                ModuleRegistry.RegisterCheckbox("Optional Stuff", "Hitboxes",
-                                                () => Enabled,
-                                                (newValue) => { Enabled = newValue; },
-                                                order: 30
-                );
+                TrainerSettingsBuilder.AddCheckbox("Hitboxes", () => Enabled, (newValue) =>
+                {
+                    Enabled = newValue;
+                });
 
-                HUDManager.CreateHUD(
-                    key: "HitboxRenderer",
-                    textGetter: () => "HITBOXES VISIBLE",
-                                     baseColor: Color.white,
-                                     pulseColor: Color.yellow,
-                                     activeGetter: () => Enabled, // <-- сюда прокидывается актуальное состояние автоматически
-                                     height: 35f
-                );
-
-                DebugStrings.Log("[HitboxRenderer] Initialized.");
+                MelonLogger.Msg("[HitboxRenderer] Initialized (clean version, no Beams). Press H to toggle.");
             }
             catch (Exception ex)
             {
@@ -97,10 +95,12 @@ namespace jsb_new
             _lines.Clear();
             _vertexBuffer = new Vector3[16384];
             _colorBuffer = new Color32[16384];
-            _indexBuffer = new int[0];
+            _indexBuffer = new int[0]; // Исправлено для старых компиляторов (было Array.Empty)
             _resourcesReady = false;
         }
 
+        // ==================== UPDATE ====================
+        // Обновите метод Update в HitboxRenderer.cs:
         public static void Update()
         {
             if (Input.GetKeyDown(KeyCode.H))
@@ -114,10 +114,17 @@ namespace jsb_new
                 return;
             }
 
+            // Если включена автоколлизия — обсчитываем полигональные меши розовых спрайтов
+            if (AutoCollision.Enabled)
+            {
+                AutoCollision.Update();
+            }
+
             DrawPlayerHitboxes();
             RenderLines();
         }
 
+        // ==================== PLAYER HITBOXES ====================
         private static void DrawPlayerHitboxes()
         {
             var mainGame = MainGame.instance;
@@ -160,6 +167,7 @@ namespace jsb_new
             AddCircle(p.x - offset, p.y, c.radius);
         }
 
+        // ==================== РЕНДЕР ====================
         private static void RenderLines()
         {
             if (_lines.Count == 0) return;
@@ -239,10 +247,16 @@ namespace jsb_new
             Array.Resize(ref _colorBuffer, newSize);
         }
 
-        private static void AddLine(Vector3 a, Vector3 b)
+        // ==================== ДОБАВЛЕНИЕ ЛИНИЙ ====================
+        public static void AddLine(Vector3 a, Vector3 b)
+        {
+            AddLine(a, b, DrawColor);
+        }
+
+        public static void AddLine(Vector3 a, Vector3 b, Color32 color)
         {
             if (_lines.Count >= 25000) return;
-            _lines.Add(new Line { A = a, B = b, Color = DrawColor });
+            _lines.Add(new Line { A = a, B = b, Color = color });
         }
 
         private static void AddCircle(float cx, float cy, float radius)
@@ -275,9 +289,10 @@ namespace jsb_new
             AddLine(a - perp, b - perp);
         }
 
+        // ==================== ПАТЧИ ====================
         public static bool OnDrawCircle(CollisionCircleComponent __instance, Circle c)
         {
-            if (!Enabled || c == null) return false;
+            if (!_enabled || c == null) return false;
             try
             {
                 var cam = CameraFlash.mainCamera;
@@ -295,7 +310,7 @@ namespace jsb_new
 
         public static bool OnDrawCircleWithVelocity(CollisionCircleComponent __instance, Circle c, float vx, float vy)
         {
-            if (!Enabled || c == null) return false;
+            if (!_enabled || c == null) return false;
             try
             {
                 var cam = CameraFlash.mainCamera;
@@ -303,10 +318,12 @@ namespace jsb_new
                 float localY = c.y * -1f;
                 float localVY = vy * -1f;
 
+                // Извлекаем примитивные float-координаты первой точки немедленно
                 Point p1Raw = cam.getCoordInWorld(c.x + 640f, localY + 360f);
                 float p1x = p1Raw.x;
                 float p1y = p1Raw.y;
 
+                // Извлекаем примитивные float-координаты второй точки (перезапись p1Raw больше не страшна)
                 Point p2Raw = cam.getCoordInWorld(c.x + vx + 640f, localY + localVY + 360f);
                 float p2x = p2Raw.x;
                 float p2y = p2Raw.y;
@@ -325,7 +342,7 @@ namespace jsb_new
 
         public static bool OnDrawRectangle(float x, float y, float scaleX, float scaleY, float rot)
         {
-            if (!Enabled) return false;
+            if (!_enabled) return false;
             try
             {
                 var cam = CameraFlash.mainCamera;
@@ -364,7 +381,7 @@ namespace jsb_new
 
         public static bool OnManageCol(DisplayObjectRendererTk2d __instance, DisplayObject d)
         {
-            if (!Enabled || __instance == null || d == null || d.colType != 2) return true;
+            if (!_enabled || __instance == null || d == null || d.colType != 2) return true;
             try
             {
                 var rectLines = __instance.rectLines;

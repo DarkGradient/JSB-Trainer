@@ -1,0 +1,179 @@
+using System;
+using HarmonyLib;
+using Il2Cpp;
+using MelonLoader;
+using UnityEngine;
+using Il2CppInterop.Runtime;
+
+namespace jsb_new
+{
+    public static class OneHit
+    {
+        public static bool Enabled
+        {
+            get => ModuleRegistry.IsActive("OneHit");
+            set => ModuleRegistry.SetActive("OneHit", value);
+        }
+
+        public static void Initialize(HarmonyLib.Harmony harmony)
+        {
+            HarmonyLib.Harmony.CreateAndPatchAll(typeof(Patch_HitByEnemy));
+            HarmonyLib.Harmony.CreateAndPatchAll(typeof(Patch_CheckPoint_Start));
+            HarmonyLib.Harmony.CreateAndPatchAll(typeof(Patch_ViewCheckpointProgress_refreshViews));
+            HarmonyLib.Harmony.CreateAndPatchAll(typeof(Patch_LogicCheckPointCheck_CompleteCheckPoint));
+            HarmonyLib.Harmony.CreateAndPatchAll(typeof(Patch_LogicCheckPointCheck_HasHeroReachedCheckpoint));
+
+            ModuleRegistry.RegisterCheckbox("Gamemodes", "One-Hit Mode",
+                                            () => Enabled,
+                                            (newValue) =>
+                                            {
+                                                Enabled = newValue;
+                                                DebugStrings.Log($"OneHit changed in settings to: {newValue}");
+                                            },
+                                            order: 10
+            );
+        }
+
+        public static bool IsMultiplayer()
+        {
+            if (GameScene.instance?.logicManager == null)
+                return false;
+
+            var type = Il2CppType.Of<ActorMultiplayerLevelLogic>();
+            var result = GameScene.instance.logicManager.getFirst(type);
+            return result != null;
+        }
+
+        [HarmonyPatch(typeof(HeroCollisionWithEnemy), "hitByEnemy")]
+        private static class Patch_HitByEnemy
+        {
+            static bool Prefix(HeroCollisionWithEnemy __instance, Actor h)
+            {
+                if (!Enabled)
+                    return true;
+
+                Hero? hero = __instance.actor.TryCast<Hero>();
+                if (hero == null)
+                    return true;
+
+                if (IsMultiplayer())
+                {
+                    DebugStrings.Log("OneHit: hit in multiplayer, setting player HP to 1 for instant death");
+                    if (hero.lifeComponent != null)
+                    {
+                        hero.lifeComponent.hp = 1f;
+                    }
+                    return true;
+                }
+
+                __instance.animDie();
+                hero.destroy();
+                RegisterManager.instance.RegisterDeath(hero.modelPlayer);
+
+                ActorNormalLevelLogic level = ActorNormalLevelLogic.getNormalLevelLogic();
+                if (level != null && level.logicRewindMusic != null)
+                {
+                    level.logicRewindMusic.rewindMusicToRestart();
+                }
+
+                return false;
+            }
+        }
+
+        [HarmonyPatch(typeof(CheckPoint), "start")]
+        private static class Patch_CheckPoint_Start
+        {
+            static void Postfix(CheckPoint __instance)
+            {
+                if (Enabled)
+                {
+                    if (IsMultiplayer())
+                        return;
+
+                    if (__instance.renderComponent != null && __instance.renderComponent.animView != null && __instance.renderComponent.animView.anim != null)
+                    {
+                        __instance.renderComponent.animView.anim.visible = false;
+                    }
+                    if (__instance.checkpointMc != null)
+                    {
+                        __instance.checkpointMc.visible = false;
+                    }
+
+                    if (__instance.fxBack != null && __instance.fxBack.renderComponent != null && __instance.fxBack.renderComponent.animView != null && __instance.fxBack.renderComponent.animView.anim != null)
+                    {
+                        __instance.fxBack.renderComponent.animView.anim.visible = false;
+                    }
+                }
+            }
+        }
+
+        [HarmonyPatch(typeof(ViewCheckpointProgress), "refreshViews")]
+        private static class Patch_ViewCheckpointProgress_refreshViews
+        {
+            static bool Prefix(ViewCheckpointProgress __instance)
+            {
+                if (Enabled)
+                {
+                    if (IsMultiplayer())
+                        return true;
+
+                    __instance.destroyAllChildren();
+                    return false;
+                }
+                return true;
+            }
+        }
+
+        [HarmonyPatch(typeof(LogicCheckPointCheck), "hasHeroReachedCheckpoint")]
+        private static class Patch_LogicCheckPointCheck_HasHeroReachedCheckpoint
+        {
+            static bool Prefix(ref bool __result)
+            {
+                if (Enabled)
+                {
+                    if (IsMultiplayer())
+                        return true;
+
+                    __result = false;
+                    return false;
+                }
+                return true;
+            }
+        }
+
+        [HarmonyPatch(typeof(LogicCheckPointCheck), "completeCheckPoint")]
+        private static class Patch_LogicCheckPointCheck_CompleteCheckPoint
+        {
+            static bool Prefix(LogicCheckPointCheck __instance, CheckPoint c, bool isFromLocalPlayer)
+            {
+                if (!Enabled)
+                    return true;
+
+                if (IsMultiplayer())
+                    return true;
+
+                if (!__instance.enabled)
+                    return false;
+
+                var fxBg = __instance.actorNormalLevel.fxBackground;
+                if (fxBg != null)
+                {
+                    fxBg.setBackground(c.modelBackGround);
+
+                    if (c.forceLastCheckPoint || c.metaSpawn.isLastCheckPoint(__instance.actorNormalLevel.modelSong.metaSong))
+                    {
+                        __instance.actorNormalLevel.logicEndLevel.onCompleteLastCheckpoint();
+                    }
+                }
+
+                __instance.callbackOnNewCheckpoint.call();
+                if (isFromLocalPlayer)
+                {
+                    __instance.callbackOnLocalPlayerCheckpoint.call();
+                }
+
+                return false;
+            }
+        }
+    }
+}

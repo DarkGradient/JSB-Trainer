@@ -6,7 +6,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Reflection;
+using HarmonyLib;
+using Il2Cpp;
 using UnityEngine;
+using Il2CppInterop.Runtime;
 
 namespace jsb_new
 {
@@ -26,6 +30,13 @@ namespace jsb_new
 
     public static class HUDManager
     {
+        // Свойство для левой плашки (Level Info)
+        public static bool LevelInfoEnabled
+        {
+            get => ModuleRegistry.IsActive("LevelInfoHUD");
+            set => ModuleRegistry.SetActive("LevelInfoHUD", value);
+        }
+
         // --- ДЕКЛАРАЦИЯ ОБЪЕКТА ПЛАШКИ ---
         public class RightPlateDef
         {
@@ -63,7 +74,13 @@ namespace jsb_new
         }
 
         // --- ПЕРЕМЕННЫЕ И СТИЛИ ---
+        private static float _levelInfoAlpha = 0f;
+
+        private static GUIStyle? _labelStyle;
         private static GUIStyle? _boxStyle;
+
+        private static string _lastDumpedSongId = "";
+        private static AudioSource? _cachedSource;
 
         // --- СТРУКТУРА ОПОВЕЩЕНИЙ ---
         public struct TrainerNotification
@@ -206,7 +223,7 @@ namespace jsb_new
             return new Vector2(finalWidth, finalHeight);
         }
 
-        // Калькулятор динамического авто-размера для всплывающих баннеров (Toasts)
+        // Калькулятор динамического авто-размера для всплывающих баннеров (Toasts) [4]
         private static Vector2 GetNotifSize(string text, int fontSize)
         {
             GUIStyle style = new GUIStyle(GUI.skin.label)
@@ -221,9 +238,18 @@ namespace jsb_new
             return new Vector2(Mathf.Max(250f, size.x + paddingX), Mathf.Max(40f, size.y + paddingY));
         }
 
-        // --- ИНИЦИАЛИЗАЦИЯ ---
+        // --- ИНИЦИАЛИЗАЦИЯ И СЛЕДИТЕЛИ ---
         public static void Initialize()
         {
+            ModuleRegistry.RegisterCheckbox(
+                category: "Optional Stuff",
+                name: "Show Level Info HUD",
+                getter: () => LevelInfoEnabled,
+                                            setter: (newValue) => { LevelInfoEnabled = newValue; },
+                                            isLocked: null,
+                                            order: 15
+            );
+
             CreateToast("WELCOME TO JS&B. ALL GOOD.", Color.green, 8.0f);
         }
 
@@ -243,7 +269,7 @@ namespace jsb_new
 
         public static void Update()
         {
-            // Плавно двигаем альфу у всех зарегистрированных плашек
+            // 1. Плавно двигаем альфу у всех зарегистрированных плашек
             foreach (var plate in RightPlates)
             {
                 float targetAlpha = (plate.ActiveGetter != null && plate.ActiveGetter()) ? 1f : 0f;
@@ -252,6 +278,9 @@ namespace jsb_new
                 // Сообщаем в менеджер стека конкретной позиции экрана
                 ReportHudActive(plate.Key, plate.Position, plate.CurrentAlpha > 0.001f);
             }
+
+            // 2. Плавная анимация появления левой плашки
+            _levelInfoAlpha = Mathf.MoveTowards(_levelInfoAlpha, LevelInfoEnabled ? 1f : 0f, Time.unscaledDeltaTime * 4f);
         }
 
         // --- РЕНДЕР (OnGUI) ---
@@ -263,11 +292,55 @@ namespace jsb_new
                 _boxStyle.normal.background = Texture2D.whiteTexture;
             }
 
+            DrawLeftHUD();
             DrawRightHUD();
             DrawNotifications();
         }
 
-        // Универсальная автоматическая отрисовка всех зарегистрированных плашек на ЛЮБОЙ из 9 позиций
+        // 1. Отрисовка левой плашки (Song Name, Time, Seed) - БЕЗ BPM!
+        private static void DrawLeftHUD()
+        {
+            if (_levelInfoAlpha <= 0.001f) return;
+
+            if (_labelStyle == null)
+            {
+                _labelStyle = new GUIStyle(GUI.skin.label)
+                {
+                    fontSize = 15,
+                    fontStyle = FontStyle.Bold,
+                    alignment = TextAnchor.UpperLeft
+                };
+            }
+
+            string songName = "None";
+            string timeStr = "00:00";
+            string seedStr = "Unknown";
+
+            ModelStoryCheckpoint currentSong = GetCurrentModelSong();
+            if (currentSong != null)
+            {
+                songName = currentSong.name;
+                timeStr = GetFormattedTime();
+                seedStr = GetRoomSeed();
+
+                CheckAndDump(currentSong);
+            }
+
+            _labelStyle.normal.textColor = new Color(1f, 1f, 1f, _levelInfoAlpha * 0.9f);
+            string hudText = $"Song: {songName}\nTime: {timeStr}\nSeed: {seedStr}";
+
+            float x = 15f; float y = 15f; float width = 300f; float height = 75f;
+
+            Color shadowColor = new Color(0f, 0f, 0f, _levelInfoAlpha * 0.5f);
+            Color originalGuiColor = GUI.color;
+            GUI.color = shadowColor;
+            GUI.Box(new Rect(x - 5f, y - 5f, width, height), "", _boxStyle);
+            GUI.color = originalGuiColor;
+
+            GUI.Label(new Rect(x, y, width - 10f, height - 10f), hudText, _labelStyle);
+        }
+
+        // 2. Универсальная автоматическая отрисовка всех зарегистрированных правых плашек на ЛЮБОЙ из 9 позиций
         private static void DrawRightHUD()
         {
             foreach (var plate in RightPlates)
@@ -283,7 +356,16 @@ namespace jsb_new
 
                 int fontSize = plate.FontSize > 0 ? plate.FontSize : 18;
 
+                // // Авто-выравнивание текста в зависимости от стороны экрана
                 TextAnchor anchor = TextAnchor.MiddleCenter;
+                // if (plate.Position == HUDPosition.TopLeft || plate.Position == HUDPosition.MiddleLeft || plate.Position == HUDPosition.BottomLeft)
+                // {
+                //     anchor = TextAnchor.MiddleLeft;
+                // }
+                // else if (plate.Position == HUDPosition.TopRight || plate.Position == HUDPosition.MiddleRight || plate.Position == HUDPosition.BottomRight)
+                // {
+                //     anchor = TextAnchor.MiddleRight;
+                // }
 
                 GUIStyle labelStyle = new GUIStyle(GUI.skin.label)
                 {
@@ -321,13 +403,16 @@ namespace jsb_new
 
                 labelStyle.normal.textColor = pulseColor;
 
+                // Небольшой отступ текста от края плашки при боковом выравнивании
                 Rect textRect = boxRect;
+                // if (anchor == TextAnchor.MiddleLeft) textRect.x += 10f;
+                // if (anchor == TextAnchor.MiddleRight) textRect.x -= 10f;
 
                 GUI.Label(textRect, hudText, labelStyle);
             }
         }
 
-        // Динамическая автоматическая отрисовка стека уведомлений (Toasts) на ЛЮБОЙ из 9 позиций
+        // 3. Динамическая автоматическая отрисовка стека уведомлений (Toasts) на ЛЮБОЙ из 9 позиций
         private static void DrawNotifications()
         {
             // 1. Забираем новые уведомления из очереди в активный список
@@ -480,6 +565,111 @@ namespace jsb_new
             // Удаляем истекшие уведомления из активного списка
             _activeNotifications.RemoveAll(n => n.Elapsed >= n.Duration);
         }
+
+        // --- РЕФЛЕКСИВНЫЕ ПОМОЩНИКИ КАРТЫ ---
+        private static ModelStoryCheckpoint? GetCurrentModelSong()
+        {
+            try
+            {
+                if (GameScene.instance?.logicManager == null) return null;
+
+                var normalType = Il2CppType.Of<ActorNormalLevelLogic>();
+                var normalLogicObj = GameScene.instance.logicManager.getFirst(normalType);
+                if (normalLogicObj != null)
+                {
+                    var normalLogic = normalLogicObj.Cast<ActorNormalLevelLogic>();
+                    if (normalLogic != null) return normalLogic.modelSong;
+                }
+
+                var multiType = Il2CppType.Of<ActorMultiplayerLevelLogic>();
+                var multiLogicObj = GameScene.instance.logicManager.getFirst(multiType);
+                if (multiLogicObj != null)
+                {
+                    var multiLogic = multiLogicObj.Cast<ActorMultiplayerLevelLogic>();
+                    if (multiLogic != null) return multiLogic.modelSong;
+                }
+            }
+            catch { }
+            return null;
+        }
+
+        private static void CheckAndDump(ModelStoryCheckpoint modelSong)
+        {
+            if (!DebugStrings.Enabled || modelSong == null || _lastDumpedSongId == modelSong.id)
+                return;
+
+            _lastDumpedSongId = modelSong.id;
+
+            DumpFieldsAndProperties(modelSong, "ModelStoryCheckpoint (currentSong)");
+            try { if (modelSong.metaSong != null) DumpFieldsAndProperties(modelSong.metaSong, "MetaSong"); } catch {}
+            try { if (modelSong.modelSoundTrack != null) DumpFieldsAndProperties(modelSong.modelSoundTrack, "ModelSoundTrack"); } catch {}
+        }
+
+        private static void DumpFieldsAndProperties(object obj, string label)
+        {
+            if (obj == null) return;
+            try
+            {
+                MelonLoader.MelonLogger.Msg($"[LevelInfoHUD] === СТРУКТУРА ОБЪЕКТА: {label} ({obj.GetType().Name}) ===");
+                foreach (var field in obj.GetType().GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic))
+                {
+                    MelonLoader.MelonLogger.Msg($"  Поле: {field.Name} (тип: {field.FieldType.Name})");
+                }
+                foreach (var prop in obj.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic))
+                {
+                    MelonLoader.MelonLogger.Msg($"  Свойство: {prop.Name} (тип: {prop.PropertyType.Name})");
+                }
+            }
+            catch (Exception ex)
+            {
+                MelonLoader.MelonLogger.Error($"[LevelInfoHUD] Ошибка дампа {label}: {ex.Message}");
+            }
+        }
+
+        private static string GetFormattedTime()
+        {
+            var src = FindMusicSource();
+            if (src == null) return "00:00";
+
+            int minutes = Mathf.FloorToInt(src.time / 60f);
+            int seconds = Mathf.FloorToInt(src.time % 60f);
+            return $"{minutes:D2}:{seconds:D2}";
+        }
+
+        private static string GetRoomSeed()
+        {
+            try { return MyMath.roomSeed.ToString(); }
+            catch { return "Unknown"; }
+        }
+
+        private static AudioSource FindMusicSource()
+        {
+            if (_cachedSource != null && _cachedSource.isPlaying && _cachedSource.clip != null)
+                return _cachedSource;
+
+            var sources = UnityEngine.Object.FindObjectsOfType<AudioSource>();
+            if (sources == null) return null!;
+
+            float longestClip = 0f;
+            AudioSource candidate = null!;
+            foreach (var src in sources)
+            {
+                if (src != null && src.isPlaying)
+                {
+                    if (src.gameObject.name.Contains("JukeBox") || src.gameObject.name.Contains("Jukebox"))
+                    {
+                        _cachedSource = src;
+                        return src;
+                    }
+                    if (src.clip != null && src.clip.length > longestClip)
+                    {
+                        longestClip = src.clip.length;
+                        candidate = src;
+                    }
+                }
+            }
+            _cachedSource = candidate;
+            return candidate;
+        }
     }
 }
-

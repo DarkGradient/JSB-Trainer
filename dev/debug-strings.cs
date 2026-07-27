@@ -11,7 +11,7 @@ namespace jsb_new
     public static class DebugStrings
     {
         // Переключи на true, когда нужен подробный лог всех подмодулей.
-        public static bool Enabled = true;
+        public static bool Enabled = false;
 
         public static void Log(string message)
         {
