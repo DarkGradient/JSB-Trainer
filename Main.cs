@@ -1,4 +1,4 @@
-﻿using HarmonyLib;
+﻿// using HarmonyLib;
 using MelonLoader;
 
 [assembly: MelonInfo(typeof(jsb_new.Main), "JSAB Trainer", "2.0.0", "dveroeb")]
