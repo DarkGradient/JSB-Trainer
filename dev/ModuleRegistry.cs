@@ -1,11 +1,4 @@
-#pragma warning disable CS8618 // Поля, не допускающие значения NULL, не инициализированы
-#pragma warning disable CS8600 // Преобразование null-литерала
-#pragma warning disable CS8603 // Возможный возврат null
-
-using System;
-using System.Collections.Generic;
 using System.Reflection;
-using HarmonyLib;
 using MelonLoader;
 
 namespace jsb_new
@@ -62,9 +55,27 @@ namespace jsb_new
         public static void UpdateAll() => _updateActions();
         public static void GUIAll() => _guiActions();
 
+
+
         // === ДИНАМИЧЕСКОЕ ПОСТРОЕНИЕ UI ===
-        public class CheckboxDef { public string Category; public string Name; public Func<bool> Getter; public Action<bool> Setter; public Func<bool>? IsLocked; public int Order; }
-        public class SliderDef { public string Category; public string Name; public float DefaultValue; public Action<float> OnChanged; public int Order; }
+        public class CheckboxDef
+        {
+            public string Category { get; set; } = null!;
+            public string Name { get; set; } = null!;
+            public Func<bool> Getter { get; set; } = null!;
+            public Action<bool> Setter { get; set; } = null!;
+            public Func<bool>? IsLocked { get; set; }
+            public int Order { get; set; }
+        }
+
+        public class SliderDef
+        {
+            public string Category { get; set; } = null!;
+            public string Name { get; set; } = null!;
+            public float DefaultValue { get; set; }
+            public Action<float> OnChanged { get; set; } = null!;
+            public int Order { get; set; }
+        }
 
         public static List<CheckboxDef> Checkboxes = new List<CheckboxDef>();
         public static List<SliderDef> Sliders = new List<SliderDef>();

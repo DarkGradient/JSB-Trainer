@@ -1,7 +1,5 @@
-using System;
 using HarmonyLib;
 using Il2Cpp;
-using MelonLoader;
 using UnityEngine;
 using UnityEngine.UI;
 using Il2CppInterop.Runtime;

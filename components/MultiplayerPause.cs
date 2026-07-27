@@ -1,4 +1,3 @@
-using HarmonyLib;
 using Il2Cpp;
 using MelonLoader;
 using UnityEngine;
@@ -8,7 +7,7 @@ namespace jsb_new
 {
     public static class MultiplayerPause
     {
-        private static UI_PauseNew _activePauseMenu;
+        private static UI_PauseNew? _activePauseMenu;
         public static void Update()
         {
             if (MainGame.instance == null) return;

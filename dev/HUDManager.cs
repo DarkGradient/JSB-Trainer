@@ -1,11 +1,3 @@
-#pragma warning disable CS8618 // Поля, не допускающие значения NULL, не инициализированы
-#pragma warning disable CS8600 // Преобразование null-литерала
-#pragma warning disable CS8602 // Разыменование возможной пустой ссылки
-#pragma warning disable CS8603 // Возможный возврат null
-#pragma warning disable CS8604 // Возможный аргумент-ссылка null
-
-using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace jsb_new
