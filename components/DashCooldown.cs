@@ -36,7 +36,6 @@ namespace jsb_new
                                           order: 70
             );
 
-            // "What Dash?" — только когда кулдаун реально в нуле
             HUDManager.CreateHUD(
                 key: "WhatDash",
                 textGetter: () => "WHAT DASH?",
@@ -46,7 +45,6 @@ namespace jsb_new
                                  height: 35f
             );
 
-            // "MODDED DASH!" — когда кулдаун сдвинут, но не до нуля
             HUDManager.CreateHUD(
                 key: "ModdedDash",
                 textGetter: () => "MODDED DASH!",

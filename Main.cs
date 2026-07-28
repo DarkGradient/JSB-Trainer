@@ -1,6 +1,7 @@
 ﻿using MelonLoader;
+using UnityEngine;
 
-[assembly: MelonInfo(typeof(jsb_new.Main), "JSAB Trainer", "2.0.0", "dveroeb")]
+[assembly: MelonInfo(typeof(jsb_new.Main), "JSAB Extra Stuff", "3.0.0", "dveroeb")]
 [assembly: MelonGame(null, null)]
 
 namespace jsb_new
@@ -11,12 +12,15 @@ namespace jsb_new
 
         public override void OnInitializeMelon()
         {
-            _harmony = new HarmonyLib.Harmony("com.dveroeb.jsb_renewed");
+            _harmony = new HarmonyLib.Harmony("com.dveroeb.jsb_extra_stuff");
 
             ModuleRegistry.InitializeAll(_harmony);
             UI.BuildSettingsMenu(_harmony);
 
-            LoggerInstance.Msg("==== JSAB TRAINER LOADED ====");
+            LoggerInstance.Msg("==== INIT.");
+            LoggerInstance.Msg($"[jsb_new] Unity version: {Application.unityVersion}");
+            LoggerInstance.Msg($"[jsb_new] App version: {Application.version}");
+            LoggerInstance.Msg($"[jsb_new] Platform: {Application.platform}");
         }
 
         public override void OnUpdate()

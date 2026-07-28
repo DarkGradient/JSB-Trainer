@@ -20,9 +20,6 @@ namespace jsb_new
             }
         }
 
-        public static bool ReactiveEnabled => Enabled && ModuleRegistry.IsActive("Flashlight_Reactive");
-        public static bool DebugDot => Enabled && ModuleRegistry.IsActive("Flashlight_DebugDot");
-
         // --- Настройки ---
         public static float BaseRadius = 180f;        // Радиус пятна в пикселях (1280x720)
         private const float PulseAmplitude = 0.08f;   // ±8% дыхание
@@ -42,16 +39,6 @@ namespace jsb_new
         public static void Initialize(HarmonyLib.Harmony harmony)
         {
             ModuleRegistry.RegisterCheckbox("Gamemodes", "Flashlight", () => Enabled, (v) => Enabled = v, order: 60);
-            ModuleRegistry.RegisterCheckbox("Gamemodes", "  Flashlight: Reactive Radius",
-                                            () => ModuleRegistry.IsActive("Flashlight_Reactive"), (v) => ModuleRegistry.SetActive("Flashlight_Reactive", v),
-                                            isLocked: () => !Enabled, order: 61);
-            ModuleRegistry.RegisterCheckbox("Gamemodes", "  Flashlight: Debug Dot",
-                                            () => ModuleRegistry.IsActive("Flashlight_DebugDot"), (v) => ModuleRegistry.SetActive("Flashlight_DebugDot", v),
-                                            isLocked: () => !Enabled, order: 62);
-            ModuleRegistry.RegisterSlider("Gamemodes", "  Flashlight: Radius", BaseRadius, (v) => BaseRadius = v, order: 63);
-
-            if (!ModuleRegistry.Checkboxes.Exists(c => c.Name == "  Flashlight: Reactive Radius"))
-                ModuleRegistry.SetActive("Flashlight_Reactive", true);
 
             DebugStrings.Log("[Flashlight] Initialized");
         }
@@ -107,18 +94,6 @@ namespace jsb_new
             {
                 targetRadius *= 1f + PulseAmplitude * Mathf.Sin(Time.unscaledTime * PulseSpeed);
 
-                if (ReactiveEnabled)
-                {
-                    Hero? hero = GetLocalHero();
-                    if (hero?.physicComponent != null)
-                    {
-                        float vx = hero.physicComponent.vx;
-                        float vy = hero.physicComponent.vy;
-                        float speed = Mathf.Sqrt(vx * vx + vy * vy);
-                        float t = Mathf.Clamp01(speed / MoveSpeedForMax);
-                        targetRadius *= Mathf.Lerp(1f, MoveMultiplierMax, t);
-                    }
-                }
             }
             catch { }
 
@@ -160,12 +135,6 @@ namespace jsb_new
             GUI.DrawTexture(rect, _texture, ScaleMode.StretchToFill, true);
 
             FillOutsideWithBlackSeamless(rect);
-
-            if (DebugDot)
-            {
-                GUI.color = Color.red;
-                GUI.DrawTexture(new Rect(screenPos.Value.x - 4f, screenPos.Value.y - 4f, 8f, 8f), Texture2D.whiteTexture);
-            }
 
             GUI.color = prevColor;
             GUI.depth = prevDepth;
