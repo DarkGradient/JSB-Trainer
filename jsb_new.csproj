@@ -30,7 +30,7 @@
 -->
 
   <ItemGroup>
-    <Compile Remove="deprecated\**" />
+    <Compile Remove="Broken-Old\**" />
   </ItemGroup>
 
 </Project>
