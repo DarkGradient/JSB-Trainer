@@ -5,16 +5,9 @@ namespace jsb_new
 {
     public static class ModuleRegistry
     {
-        // === ИНИЦИАЛИЗАЦИЯ MELON PREFERENCES ===
-        // Категория настроек в файле UserData/MelonPreferences.cfg
         private static readonly MelonPreferences_Category _prefCategory =
         MelonPreferences.CreateCategory("JSAB_ExtraStuff", "JS&B Extra Stuff Settings");
 
-        // Кэш созданных записей
-        private static readonly Dictionary<string, MelonPreferences_Entry<bool>> _boolEntries = new Dictionary<string, MelonPreferences_Entry<bool>>();
-        private static readonly Dictionary<string, MelonPreferences_Entry<float>> _floatEntries = new Dictionary<string, MelonPreferences_Entry<float>>();
-
-        // === ЕДИНЫЙ РЕЕСТР СОСТОЯНИЙ ===
         private static readonly Dictionary<string, bool> _states = new Dictionary<string, bool>();
 
         public static bool IsActive(string name) => _states.TryGetValue(name, out var val) && val;
@@ -60,7 +53,6 @@ namespace jsb_new
                 }
             }
 
-            // Сохраняем первичную конфигурацию при старте
             _prefCategory.SaveToFile(false);
         }
 
@@ -68,7 +60,6 @@ namespace jsb_new
         public static void GUIAll() => _guiActions();
 
 
-        // === ДИНАМИЧЕСКОЕ ПОСТРОЕНИЕ UI С АВТОСОХРАНЕНИЕМ ===
         public class CheckboxDef
         {
             public string Category { get; set; } = null!;
@@ -91,25 +82,39 @@ namespace jsb_new
         public static List<CheckboxDef> Checkboxes = new List<CheckboxDef>();
         public static List<SliderDef> Sliders = new List<SliderDef>();
 
-        // --- АВТОМАТИЧЕСКАЯ РЕГИСТРАЦИЯ И СОХРАНЕНИЕ ЧЕКБОКСОВ ---
-        public static void RegisterCheckbox(string category, string name, Func<bool> getter, Action<bool> setter, Func<bool>? isLocked = null, int order = 0)
+        // Обычная простая регистрация чекбоксов
+        public static void RegisterCheckbox(
+            string category,
+            string name,
+            Func<bool> getter,
+            Action<bool> setter,
+            Func<bool>? isLocked = null,
+            int order = 0)
         {
-            // Формируем уникальный ключ для конфига, например "Optional_Stuff_Auto_Dash"
             string key = $"{category}_{name}".Replace(" ", "_");
 
-            // 1. Создаем или читаем значение из MelonPreferences (значение по умолчанию берем из гетера)
             var entry = _prefCategory.CreateEntry(key, getter(), name);
-            _boolEntries[key] = entry;
+            bool loadedValue = entry.Value;
 
-            // 2. Сразу применяем сохраненное из файла значение в модуль при запуске игры!
-            setter(entry.Value);
+            // --- ВСЯ ЗАЩИТА В 2 СТРОЧКАХ ---
+            // Если из файла прочиталось true, но опция заблокирована твоим isLocked — сбрасываем в false!
+            if (isLocked != null && isLocked() && loadedValue)
+            {
+                loadedValue = false;
+                entry.Value = false;
+            }
 
-            // 3. Создаем обертку для сеттера: при клике в UI обновляем модуль + сохраняем файл
+            setter(loadedValue);
+
             Action<bool> autoSavingSetter = (newValue) =>
             {
+                // Если кнопка заблокирована — не даем ее включить
+                if (newValue && isLocked != null && isLocked())
+                    return;
+
                 setter(newValue);
                 entry.Value = newValue;
-                _prefCategory.SaveToFile(false); // Записывает изменение на диск
+                _prefCategory.SaveToFile(false); // Автосохранение на диск
             };
 
             Checkboxes.Add(new CheckboxDef
@@ -123,15 +128,11 @@ namespace jsb_new
             });
         }
 
-        // --- АВТОМАТИЧЕСКАЯ РЕГИСТРАЦИЯ И СОХРАНЕНИЕ СЛАЙДЕРОВ ---
         public static void RegisterSlider(string category, string name, float defaultValue, Action<float> onChanged, int order = 0)
         {
             string key = $"{category}_{name}".Replace(" ", "_");
 
             var entry = _prefCategory.CreateEntry(key, defaultValue, name);
-            _floatEntries[key] = entry;
-
-            // Сразу применяем сохраненный уровень слайдера при запуске
             onChanged(entry.Value);
 
             Action<float> autoSavingOnChanged = (newValue) =>
