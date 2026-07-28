@@ -5,6 +5,15 @@ namespace jsb_new
 {
     public static class ModuleRegistry
     {
+        // === ИНИЦИАЛИЗАЦИЯ MELON PREFERENCES ===
+        // Категория настроек в файле UserData/MelonPreferences.cfg
+        private static readonly MelonPreferences_Category _prefCategory =
+        MelonPreferences.CreateCategory("JSAB_ExtraStuff", "JS&B Extra Stuff Settings");
+
+        // Кэш созданных записей
+        private static readonly Dictionary<string, MelonPreferences_Entry<bool>> _boolEntries = new Dictionary<string, MelonPreferences_Entry<bool>>();
+        private static readonly Dictionary<string, MelonPreferences_Entry<float>> _floatEntries = new Dictionary<string, MelonPreferences_Entry<float>>();
+
         // === ЕДИНЫЙ РЕЕСТР СОСТОЯНИЙ ===
         private static readonly Dictionary<string, bool> _states = new Dictionary<string, bool>();
 
@@ -50,14 +59,16 @@ namespace jsb_new
                     MelonLogger.Error($"[Registry] Failed to hook {type.Name}: {ex.InnerException?.Message ?? ex.Message}");
                 }
             }
+
+            // Сохраняем первичную конфигурацию при старте
+            _prefCategory.SaveToFile(false);
         }
 
         public static void UpdateAll() => _updateActions();
         public static void GUIAll() => _guiActions();
 
 
-
-        // === ДИНАМИЧЕСКОЕ ПОСТРОЕНИЕ UI ===
+        // === ДИНАМИЧЕСКОЕ ПОСТРОЕНИЕ UI С АВТОСОХРАНЕНИЕМ ===
         public class CheckboxDef
         {
             public string Category { get; set; } = null!;
@@ -80,10 +91,64 @@ namespace jsb_new
         public static List<CheckboxDef> Checkboxes = new List<CheckboxDef>();
         public static List<SliderDef> Sliders = new List<SliderDef>();
 
+        // --- АВТОМАТИЧЕСКАЯ РЕГИСТРАЦИЯ И СОХРАНЕНИЕ ЧЕКБОКСОВ ---
         public static void RegisterCheckbox(string category, string name, Func<bool> getter, Action<bool> setter, Func<bool>? isLocked = null, int order = 0)
-        => Checkboxes.Add(new CheckboxDef { Category = category, Name = name, Getter = getter, Setter = setter, IsLocked = isLocked, Order = order });
+        {
+            // Формируем уникальный ключ для конфига, например "Optional_Stuff_Auto_Dash"
+            string key = $"{category}_{name}".Replace(" ", "_");
 
+            // 1. Создаем или читаем значение из MelonPreferences (значение по умолчанию берем из гетера)
+            var entry = _prefCategory.CreateEntry(key, getter(), name);
+            _boolEntries[key] = entry;
+
+            // 2. Сразу применяем сохраненное из файла значение в модуль при запуске игры!
+            setter(entry.Value);
+
+            // 3. Создаем обертку для сеттера: при клике в UI обновляем модуль + сохраняем файл
+            Action<bool> autoSavingSetter = (newValue) =>
+            {
+                setter(newValue);
+                entry.Value = newValue;
+                _prefCategory.SaveToFile(false); // Записывает изменение на диск
+            };
+
+            Checkboxes.Add(new CheckboxDef
+            {
+                Category = category,
+                Name = name,
+                Getter = getter,
+                Setter = autoSavingSetter,
+                IsLocked = isLocked,
+                Order = order
+            });
+        }
+
+        // --- АВТОМАТИЧЕСКАЯ РЕГИСТРАЦИЯ И СОХРАНЕНИЕ СЛАЙДЕРОВ ---
         public static void RegisterSlider(string category, string name, float defaultValue, Action<float> onChanged, int order = 0)
-        => Sliders.Add(new SliderDef { Category = category, Name = name, DefaultValue = defaultValue, OnChanged = onChanged, Order = order });
+        {
+            string key = $"{category}_{name}".Replace(" ", "_");
+
+            var entry = _prefCategory.CreateEntry(key, defaultValue, name);
+            _floatEntries[key] = entry;
+
+            // Сразу применяем сохраненный уровень слайдера при запуске
+            onChanged(entry.Value);
+
+            Action<float> autoSavingOnChanged = (newValue) =>
+            {
+                onChanged(newValue);
+                entry.Value = newValue;
+                _prefCategory.SaveToFile(false);
+            };
+
+            Sliders.Add(new SliderDef
+            {
+                Category = category,
+                Name = name,
+                DefaultValue = entry.Value,
+                OnChanged = autoSavingOnChanged,
+                Order = order
+            });
+        }
     }
 }
