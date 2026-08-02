@@ -10,15 +10,15 @@
   <!-- AUTOCOPY -->
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <Copy SourceFiles="$(OutputPath)$(AssemblyName).dll"
-          DestinationFolder="/media/1TB/SteamLibrary/steamapps/common/Just Shapes &amp; Beats/Mods/" />
+          DestinationFolder="D:\SteamLibrary\steamapps\common\Just Shapes &amp; Beats\Mods\" />
   </Target>
 
   <ItemGroup>
-    <Reference Include="/media/1TB/SteamLibrary/steamapps/common/Just Shapes &amp; Beats/MelonLoader/Il2CppAssemblies/*.dll">
+    <Reference Include="D:\SteamLibrary\steamapps\common\Just Shapes &amp; Beats\MelonLoader\Il2CppAssemblies\*.dll">
       <Private>false</Private>
     </Reference>
 
-  <Reference Include="/media/1TB/SteamLibrary/steamapps/common/Just Shapes &amp; Beats/MelonLoader/net6/*.dll">
+  <Reference Include="D:\SteamLibrary\steamapps\common\Just Shapes &amp; Beats\MelonLoader\net6\*.dll">
       <Private>false</Private>
     </Reference>
   </ItemGroup>
@@ -30,7 +30,10 @@
 -->
 
   <ItemGroup>
-    <Compile Remove="Broken-Old\**" />
+    <Compile Remove="Leftover\**" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="!GAME_SRC\**" />
+  </ItemGroup>
 </Project>
