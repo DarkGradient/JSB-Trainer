@@ -9,8 +9,7 @@
 
   <!-- AUTOCOPY -->
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Copy SourceFiles="$(OutputPath)$(AssemblyName).dll"
-          DestinationFolder="D:\SteamLibrary\steamapps\common\Just Shapes &amp; Beats\Mods\" />
+    <Copy SourceFiles="$(OutputPath)$(AssemblyName).dll" DestinationFolder="D:\SteamLibrary\steamapps\common\Just Shapes &amp; Beats\Mods\" />
   </Target>
 
   <ItemGroup>
