@@ -1,4 +1,5 @@
 bin/
 obj/
+.vs/
 \!GAME_SRC/
 .hidden

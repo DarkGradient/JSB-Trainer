@@ -23,14 +23,8 @@ namespace jsb_new
             LoggerInstance.Msg($"[jsb_new] Platform: {Application.platform}");
         }
 
-        public override void OnUpdate()
-        {
-            ModuleRegistry.UpdateAll();
-        }
+        public override void OnUpdate() => ModuleRegistry.UpdateAll();
 
-        public override void OnGUI()
-        {
-            ModuleRegistry.GUIAll();
-        }
+        public override void OnGUI() => ModuleRegistry.GUIAll();
     }
 }

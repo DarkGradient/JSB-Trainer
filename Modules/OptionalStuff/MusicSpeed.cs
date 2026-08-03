@@ -1,8 +1,7 @@
 using Il2Cpp;
+using Il2CppInterop.Runtime;
 using MelonLoader;
 using UnityEngine;
-using Il2CppInterop.Runtime;
-
 
 namespace jsb_new
 {
