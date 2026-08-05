@@ -28,31 +28,22 @@ namespace jsb_new
         static MenuLayout()
         {
             Spacer();
-            Header("Hello, you can configure me here");
-            Spacer();
 
-            Header("Gamemodes");
-            Spacer();
             Item("One-Hit Mode");
             Item("True One-Hit (Beta)");
             Item("Purple SOUL Mode");
             Item("Orange SOUL Mode");
             Item("Mouse Control");
             Item("Flashlight");
-
-            Spacer();
-            Header("Dunno where to put it, so it will be here");
-            Header("Optional Stuff");
-            Spacer();
             Item("Enable Audio Visualizer");
             Item("Noclip");
             Item("Hitboxes");
             Item("Always black BG");
             Item("Hide Timeline");
             Item("FPS Unlock (400 FPS)");
+			Item("Auto Dash");
             Item("Dash Cooldown");
-            Item("Auto Dash");
-
+			
             Spacer();
         }
 
