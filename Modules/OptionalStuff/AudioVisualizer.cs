@@ -65,10 +65,9 @@ namespace jsb_new
         {
             HarmonyLib.Harmony.CreateAndPatchAll(typeof(Patch_KeyManager_Update_AudioVisualizer));
 
-            ModuleRegistry.RegisterCheckbox("Optional Stuff", "Enable Audio Visualizer",
+            ModuleRegistry.RegisterCheckbox("Enable Audio Visualizer",
                                             () => Enabled,
-                                            (newValue) => SetEnabledState(newValue),
-                                            order: 10
+                                            (newValue) => SetEnabledState(newValue)
             );
         }
 

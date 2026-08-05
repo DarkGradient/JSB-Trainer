@@ -7,7 +7,6 @@ namespace jsb_new
     {
         private static bool _introSkipped = false;
 
-        // Метод Update вызывается автоматически каждый кадр, пока файл существует в проекте
         public static void Update()
         {
             if (MainGame.instance == null) return;

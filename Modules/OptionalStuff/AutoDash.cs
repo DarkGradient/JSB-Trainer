@@ -30,11 +30,9 @@ namespace jsb_new
             );
 
             ModuleRegistry.RegisterCheckbox(
-                "Optional Stuff",
                 "Auto Dash",
                 () => Enabled,
-                                            (newValue) => { Enabled = newValue; },
-                                            order: 25
+                (newValue) => { Enabled = newValue; }
             );
 
             DebugStrings.Log("AutoDash Ready");

@@ -15,10 +15,9 @@ namespace jsb_new
         {
             MelonEvents.OnUpdate.Subscribe(OnUpdate);
 
-            ModuleRegistry.RegisterCheckbox("Optional Stuff", "FPS Unlock (400 FPS)",
+            ModuleRegistry.RegisterCheckbox("FPS Unlock (400 FPS)",
                                             () => Enabled,
-                                            (newValue) => SetEnabledState(newValue),
-                                            order: 60
+                                            (newValue) => SetEnabledState(newValue)
             );
 
             if (Enabled)

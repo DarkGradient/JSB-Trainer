@@ -22,11 +22,10 @@ namespace jsb_new
         {
             HarmonyLib.Harmony.CreateAndPatchAll(typeof(Patch_FxBackground_SetBackGroundColor));
 
-            ModuleRegistry.RegisterCheckbox("Optional Stuff", "Always black BG",
+            ModuleRegistry.RegisterCheckbox("Always black BG",
                                             () => EffectiveEnabled,
                                             (newValue) => { Enabled = newValue; },
-                                            isLocked: () => ModuleRegistry.IsActive("OneHit"),
-                                            order: 40
+                                            isLocked: () => ModuleRegistry.IsActive("OneHit")
             );
 
             DebugStrings.Log("Color swap blocker initialized");

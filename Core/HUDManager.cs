@@ -2,7 +2,6 @@ using UnityEngine;
 
 namespace jsb_new
 {
-    // Сетка из 9 позиций экрана
     public enum HUDPosition
     {
         TopLeft,
@@ -18,7 +17,6 @@ namespace jsb_new
 
     public static class HUDManager
     {
-        // --- ДЕКЛАРАЦИЯ ОБЪЕКТА ПЛАШКИ ---
         public class RightPlateDef
         {
             public string Key = "";

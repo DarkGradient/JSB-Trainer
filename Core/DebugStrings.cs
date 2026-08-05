@@ -4,7 +4,7 @@ namespace jsb_new
 {
     public static class DebugStrings
     {
-        public static bool Enabled = true;
+        public static bool Enabled = false;
 
         public static void Log(string message)
         {

@@ -82,18 +82,16 @@ namespace jsb_new
             HarmonyLib.Harmony.CreateAndPatchAll(typeof(Patch_LogicEndLevel_OnCompleteLastCheckpoint));
 
             // Чекбоксы
-            ModuleRegistry.RegisterCheckbox("Gamemodes", "One-Hit Mode",
+            ModuleRegistry.RegisterCheckbox("One-Hit Mode",
                                             () => Enabled,
                                             (newValue) => { Enabled = newValue; },
-                                            isLocked: () => ModuleRegistry.IsActive("MouseControl"),
-                                            order: 10
+                                            isLocked: () => ModuleRegistry.IsActive("MouseControl")
             );
 
-            ModuleRegistry.RegisterCheckbox("Gamemodes", "True One-Hit (Beta)",
+            ModuleRegistry.RegisterCheckbox("True One-Hit (Beta)",
                                             () => TrueOneHitEnabled,
                                             (newValue) => { TrueOneHitEnabled = newValue; },
-                                            isLocked: () => !Enabled || ModuleRegistry.IsActive("MouseControl"),
-                                            order: 11
+                                            isLocked: () => !Enabled || ModuleRegistry.IsActive("MouseControl")
             );
 
             // HUD Плашка – улучшена: для обычного OneHit показываем только надпись, для True – со статусом.

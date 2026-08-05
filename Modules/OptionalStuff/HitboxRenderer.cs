@@ -64,10 +64,9 @@ namespace jsb_new
                 if (manageColMethod != null)
                     harmony.Patch(manageColMethod, new HarmonyMethod(typeof(HitboxRenderer), nameof(OnManageCol)));
 
-                ModuleRegistry.RegisterCheckbox("Optional Stuff", "Hitboxes",
+                ModuleRegistry.RegisterCheckbox("Hitboxes",
                                                 () => Enabled,
-                                                (newValue) => { Enabled = newValue; },
-                                                order: 30
+                                                (newValue) => { Enabled = newValue; }
                 );
 
                 HUDManager.CreateHUD(

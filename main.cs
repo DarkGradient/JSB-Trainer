@@ -18,9 +18,9 @@ namespace jsb_new
             UI.BuildSettingsMenu(_harmony);
 
             LoggerInstance.Msg("==== INIT.");
-            LoggerInstance.Msg($"[jsb_new] Unity version: {Application.unityVersion}");
-            LoggerInstance.Msg($"[jsb_new] App version: {Application.version}");
-            LoggerInstance.Msg($"[jsb_new] Platform: {Application.platform}");
+            // LoggerInstance.Msg($"[jsb_new] Unity version: {Application.unityVersion}");
+            // LoggerInstance.Msg($"[jsb_new] App version: {Application.version}");
+            // LoggerInstance.Msg($"[jsb_new] Platform: {Application.platform}");
         }
 
         public override void OnUpdate() => ModuleRegistry.UpdateAll();

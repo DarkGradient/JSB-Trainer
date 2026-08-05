@@ -34,11 +34,10 @@ namespace jsb_new
             HarmonyLib.Harmony.CreateAndPatchAll(typeof(Patch_HeroDashComponent_Start_PurpleSoul));
             HarmonyLib.Harmony.CreateAndPatchAll(typeof(Patch_HeroControl_Start_PurpleSoul));
 
-            ModuleRegistry.RegisterCheckbox("Gamemodes", "Purple SOUL Mode",
+            ModuleRegistry.RegisterCheckbox("Purple SOUL Mode",
                                             () => Enabled,
                                             (newValue) => SetEnabledState(newValue),
-                                            isLocked: () => ModuleRegistry.IsActive("MouseControl") || ModuleRegistry.IsActive("OrangeSoul"),
-                                            order: 20
+                                            isLocked: () => ModuleRegistry.IsActive("MouseControl") || ModuleRegistry.IsActive("OrangeSoul")
             );
         }
 

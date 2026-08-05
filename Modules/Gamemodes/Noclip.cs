@@ -1,4 +1,4 @@
-﻿using HarmonyLib;
+using HarmonyLib;
 using Il2Cpp;
 using UnityEngine;
 
@@ -28,10 +28,9 @@ namespace jsb_new
                           prefix: new HarmonyMethod(typeof(Noclip), nameof(OnCollision))
             );
 
-            ModuleRegistry.RegisterCheckbox("Optional Stuff", "Noclip",
+            ModuleRegistry.RegisterCheckbox("Noclip",
                                             () => Enabled,
-                                            (newValue) => { Enabled = newValue; },
-                                            order: 20
+                                            (newValue) => { Enabled = newValue; }
             );
 
             // РЕГИСТРИРУЕМ ПЛАШКУ В HUD-МЕНЕДЖЕРЕ!

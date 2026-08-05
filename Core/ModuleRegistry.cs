@@ -62,36 +62,31 @@ namespace jsb_new
 
         public class CheckboxDef
         {
-            public string Category { get; set; } = null!;
             public string Name { get; set; } = null!;
             public Func<bool> Getter { get; set; } = null!;
             public Action<bool> Setter { get; set; } = null!;
             public Func<bool>? IsLocked { get; set; }
-            public int Order { get; set; }
         }
 
         public class SliderDef
         {
-            public string Category { get; set; } = null!;
             public string Name { get; set; } = null!;
             public float DefaultValue { get; set; }
             public Action<float> OnChanged { get; set; } = null!;
-            public int Order { get; set; }
         }
 
         public static List<CheckboxDef> Checkboxes = new List<CheckboxDef>();
         public static List<SliderDef> Sliders = new List<SliderDef>();
 
-        // Обычная простая регистрация чекбоксов
+        // Обычная простая регистрация чекбоксов.
+        // Порядок и категория в меню больше не задаются здесь — см. MenuLayout.cs.
         public static void RegisterCheckbox(
-            string category,
             string name,
             Func<bool> getter,
             Action<bool> setter,
-            Func<bool>? isLocked = null,
-            int order = 0)
+            Func<bool>? isLocked = null)
         {
-            string key = $"{category}_{name}".Replace(" ", "_");
+            string key = name.Replace(" ", "_");
 
             var entry = _prefCategory.CreateEntry(key, getter(), name);
             bool loadedValue = entry.Value;
@@ -119,18 +114,17 @@ namespace jsb_new
 
             Checkboxes.Add(new CheckboxDef
             {
-                Category = category,
                 Name = name,
                 Getter = getter,
                 Setter = autoSavingSetter,
-                IsLocked = isLocked,
-                Order = order
+                IsLocked = isLocked
             });
         }
 
-        public static void RegisterSlider(string category, string name, float defaultValue, Action<float> onChanged, int order = 0)
+        // Порядок и категория в меню больше не задаются здесь — см. MenuLayout.cs.
+        public static void RegisterSlider(string name, float defaultValue, Action<float> onChanged)
         {
-            string key = $"{category}_{name}".Replace(" ", "_");
+            string key = name.Replace(" ", "_");
 
             var entry = _prefCategory.CreateEntry(key, defaultValue, name);
             onChanged(entry.Value);
@@ -144,11 +138,9 @@ namespace jsb_new
 
             Sliders.Add(new SliderDef
             {
-                Category = category,
                 Name = name,
                 DefaultValue = entry.Value,
-                OnChanged = autoSavingOnChanged,
-                Order = order
+                OnChanged = autoSavingOnChanged
             });
         }
     }

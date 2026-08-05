@@ -18,15 +18,14 @@ namespace jsb_new
         {
             HarmonyLib.Harmony.CreateAndPatchAll(typeof(Patch_HeroInputLocal_Update_OrangeSoul));
 
-            ModuleRegistry.RegisterCheckbox("Gamemodes", "Orange SOUL Mode",
+            ModuleRegistry.RegisterCheckbox("Orange SOUL Mode",
                                             () => Enabled,
                                             (newValue) =>
                                             {
                                                 Enabled = newValue;
                                                 DebugStrings.Log($"OrangeSoul mode changed to: {newValue}");
                                             },
-                                            isLocked: () => ModuleRegistry.IsActive("MouseControl") || ModuleRegistry.IsActive("PurpleSoul"),
-                                            order: 30
+                                            isLocked: () => ModuleRegistry.IsActive("MouseControl") || ModuleRegistry.IsActive("PurpleSoul")
             );
         }
 

@@ -38,7 +38,7 @@ namespace jsb_new
 
         public static void Initialize(HarmonyLib.Harmony harmony)
         {
-            ModuleRegistry.RegisterCheckbox("Gamemodes", "Flashlight", () => Enabled, (v) => Enabled = v, order: 60);
+            ModuleRegistry.RegisterCheckbox("Flashlight", () => Enabled, (v) => Enabled = v);
 
             DebugStrings.Log("[Flashlight] Initialized");
         }

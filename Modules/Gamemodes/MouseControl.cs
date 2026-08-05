@@ -17,15 +17,14 @@ namespace jsb_new
             HarmonyLib.Harmony.CreateAndPatchAll(typeof(Patch_HeroInputLocal_Update));
             HarmonyLib.Harmony.CreateAndPatchAll(typeof(Patch_HeroControl_Update));
 
-            ModuleRegistry.RegisterCheckbox("Gamemodes", "Mouse Control",
+            ModuleRegistry.RegisterCheckbox("Mouse Control",
                                             () => MouseMoveEnabled,
                                             (newValue) =>
                                             {
                                                 MouseMoveEnabled = newValue;
                                                 DebugStrings.Log($"MouseControl changed to: {newValue}");
                                             },
-                                            isLocked: () => ModuleRegistry.IsActive("OrangeSoul") || ModuleRegistry.IsActive("PurpleSoul") || ModuleRegistry.IsActive("OneHit"),
-                                            order: 40
+                                            isLocked: () => ModuleRegistry.IsActive("OrangeSoul") || ModuleRegistry.IsActive("PurpleSoul") || ModuleRegistry.IsActive("OneHit")
             );
         }
 

@@ -38,14 +38,13 @@ namespace jsb_new
             }
 
             // Регистрирует свой чекбокс
-            ModuleRegistry.RegisterCheckbox("Optional Stuff", "Hide Timeline",
+            ModuleRegistry.RegisterCheckbox("Hide Timeline",
                 () => Enabled,
                 (newValue) =>
                 {
                     Enabled = newValue;
                     DebugStrings.Log($"Hide timeline set to {newValue}");
-                },
-                order: 50
+                }
             );
         }
 
