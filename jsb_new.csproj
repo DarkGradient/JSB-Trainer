@@ -9,30 +9,30 @@
 
   <!-- AUTOCOPY -->
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Copy SourceFiles="$(OutputPath)$(AssemblyName).dll" DestinationFolder="D:\SteamLibrary\steamapps\common\Just Shapes &amp; Beats\Mods\" />
+    <Copy SourceFiles="$(OutputPath)$(AssemblyName).dll" DestinationFolder="/media/1TB/SteamLibrary/steamapps/common/Just Shapes &amp; Beats/Mods/" />
   </Target>
 
   <ItemGroup>
-    <Reference Include="D:\SteamLibrary\steamapps\common\Just Shapes &amp; Beats\MelonLoader\Il2CppAssemblies\*.dll">
+    <Reference Include="/media/1TB/SteamLibrary/steamapps/common/Just Shapes &amp; Beats/MelonLoader/Il2CppAssemblies/*.dll">
       <Private>false</Private>
     </Reference>
 
-  <Reference Include="D:\SteamLibrary\steamapps\common\Just Shapes &amp; Beats\MelonLoader\net6\*.dll">
+  <Reference Include="/media/1TB/SteamLibrary/steamapps/common/Just Shapes &amp; Beats/MelonLoader/net6/*.dll">
       <Private>false</Private>
     </Reference>
   </ItemGroup>
 
 <!--
   <ItemGroup>
-    <EmbeddedResource Include="resources\test_image.png" />
+    <EmbeddedResource Include="resources/test_image.png" />
   </ItemGroup>
 -->
 
   <ItemGroup>
-    <Compile Remove="Leftover\**" />
+    <Compile Remove="Эксперементы/**" />
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Remove="!GAME_SRC\**" />
+    <Compile Remove="!GAME_SRC/**" />
   </ItemGroup>
 </Project>
