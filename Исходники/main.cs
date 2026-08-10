@@ -17,7 +17,7 @@ namespace jsb_new
             ModuleRegistry.InitializeAll(_harmony);
             UI.BuildSettingsMenu(_harmony);
 
-            LoggerInstance.Msg("==== INIT.");
+            LoggerInstance.Msg("==== INIT. IMGUI Settings ready (K to open).");
             // LoggerInstance.Msg($"[jsb_new] Unity version: {Application.unityVersion}");
             // LoggerInstance.Msg($"[jsb_new] App version: {Application.version}");
             // LoggerInstance.Msg($"[jsb_new] Platform: {Application.platform}");

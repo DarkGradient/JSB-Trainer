@@ -2,31 +2,31 @@ using System.Collections.Generic;
 
 namespace jsb_new
 {
-    // Единственное место, где описан порядок построения меню настроек.
-    // Модули (читы) ничего не знают о своей позиции в меню — они лишь
-    // регистрируют чекбокс/слайдер по уникальному Name через ModuleRegistry.
-    // Здесь мы этот Name находим и расставляем в нужном порядке, вперемешку
-    // с заголовками и разделителями.
-    //
-    // Если удалить файл чита — соответствующий Item() просто ничего не найдёт
-    // в ModuleRegistry.Checkboxes/Sliders и будет молча пропущен.
     public static class MenuLayout
     {
-        private abstract class Entry { }
-        private sealed class HeaderEntry : Entry { public string Text = ""; }
-        private sealed class SpacerEntry : Entry { }
-        private sealed class ItemEntry : Entry { public string Name = ""; }
+        public abstract class Entry { }
+
+        public sealed class HeaderEntry : Entry
+        {
+            public string Text = "";
+        }
+
+        public sealed class SpacerEntry : Entry { }
+
+        public sealed class ItemEntry : Entry
+        {
+            public string Name = "";
+        }
 
         private static readonly List<Entry> _layout = new();
 
-        // ---- Мини-DSL для описания структуры ----
         private static void Header(string text) => _layout.Add(new HeaderEntry { Text = text });
         private static void Spacer() => _layout.Add(new SpacerEntry());
         private static void Item(string name) => _layout.Add(new ItemEntry { Name = name });
 
-        // ---- Порядок построения меню описывается только здесь ----
         static MenuLayout()
         {
+            Header("Визуал");
             Item("Full Power Trail");
             Item("Custom Player Color");
             Item("Player RGB Mode");
@@ -38,6 +38,7 @@ namespace jsb_new
             Item("Spin Speed");
             Spacer();
 
+            Header("Геймплей");
             Item("One-Hit Mode");
             Item("True One-Hit (Beta)");
             Item("Level Mirror");
@@ -45,56 +46,20 @@ namespace jsb_new
             Item("Orange SOUL Mode");
             Item("Mouse Control");
             Item("Flashlight");
-            Item("Enable Audio Visualizer");
             Item("Noclip");
             Item("Hitboxes");
+            Item("Auto Dash");
+            Item("Dash Cooldown");
+            Spacer();
+
+            Header("Прочее");
+            Item("Enable Audio Visualizer");
             Item("Always black BG");
             Item("Hide Timeline");
             Item("FPS Unlock (400 FPS)");
-			Item("Auto Dash");
-            Item("Dash Cooldown");
-			
             Spacer();
         }
 
-        // Строит меню в заданном порядке через TrainerSettingsBuilder.
-        public static void Build()
-        {
-            foreach (var entry in _layout)
-            {
-                switch (entry)
-                {
-                    case HeaderEntry h:
-                        TrainerSettingsBuilder.AddHeader(h.Text);
-                        break;
-                    case SpacerEntry:
-                        TrainerSettingsBuilder.AddSpacer();
-                        break;
-                    case ItemEntry i:
-                        AddItem(i.Name);
-                        break;
-                }
-            }
-        }
-
-        private static void AddItem(string name)
-        {
-            var checkbox = ModuleRegistry.Checkboxes.Find(c => c.Name == name);
-            if (checkbox != null)
-            {
-                TrainerSettingsBuilder.AddCheckbox(checkbox.Name, checkbox.Getter, checkbox.Setter, checkbox.IsLocked);
-                return;
-            }
-
-            var slider = ModuleRegistry.Sliders.Find(s => s.Name == name);
-            if (slider != null)
-            {
-                TrainerSettingsBuilder.AddSlider(slider.Name, slider.DefaultValue, slider.OnChanged);
-                return;
-            }
-
-            // Пункт не зарегистрирован — файл чита отсутствует в сборке. Пропускаем.
-            DebugStrings.Log($"[MenuLayout] Пункт \"{name}\" не найден в реестре — пропущен.");
-        }
+        public static IReadOnlyList<Entry> GetEntries() => _layout;
     }
 }

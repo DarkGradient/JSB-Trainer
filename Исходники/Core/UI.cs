@@ -4,8 +4,8 @@ namespace jsb_new
     {
         public static void BuildSettingsMenu(HarmonyLib.Harmony harmony)
         {
-            TrainerSettingsBuilder.Initialize(harmony);
-            MenuLayout.Build();
+            // Старый TrainerSettingsBuilder больше не используем
+            SettingsMenu.Initialize();
         }
     }
 }
