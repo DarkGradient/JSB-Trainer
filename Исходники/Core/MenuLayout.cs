@@ -28,6 +28,8 @@ namespace jsb_new
         static MenuLayout()
         {
             Item("Full Power Trail");
+            Item("Custom Player Color");
+            Item("Custom Enemy Color");
             Spacer();
 
             Item("One-Hit Mode");
