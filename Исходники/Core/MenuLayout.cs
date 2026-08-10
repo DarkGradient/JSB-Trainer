@@ -49,7 +49,6 @@ namespace jsb_new
             Header("Модификаторы");
             Item("One-Hit Mode");
             Item("True One-Hit (Beta)");
-            Item("Level Mirror");
             Item("Purple SOUL Mode");
             Item("Orange SOUL Mode");
             Item("Mouse Control");
