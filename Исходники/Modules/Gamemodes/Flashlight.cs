@@ -39,6 +39,7 @@ namespace jsb_new
         public static void Initialize(HarmonyLib.Harmony harmony)
         {
             ModuleRegistry.RegisterCheckbox("Flashlight", () => Enabled, (v) => Enabled = v);
+            ModuleRegistry.RegisterSlider("Flashlight Size", 180f, (val) => BaseRadius = Mathf.Lerp(80f, 400f, val));
 
             DebugStrings.Log("[Flashlight] Initialized");
         }

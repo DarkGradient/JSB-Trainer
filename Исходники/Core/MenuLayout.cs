@@ -53,6 +53,7 @@ namespace jsb_new
             Item("Orange SOUL Mode");
             Item("Mouse Control");
             Item("Flashlight");
+            Item("Flashlight Size");
             Item("Noclip");
             Item("Hitboxes");
             Item("Auto Dash");
