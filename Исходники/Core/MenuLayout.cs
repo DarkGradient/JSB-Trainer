@@ -29,7 +29,13 @@ namespace jsb_new
         {
             Item("Full Power Trail");
             Item("Custom Player Color");
+            Item("Player RGB Mode");
+            Item("Player Color");
             Item("Custom Enemy Color");
+            Item("Enemy RGB Mode");
+            Item("Enemy Color");
+            Item("Tornado / Spin Mode");
+            Item("Spin Speed");
             Spacer();
 
             Item("One-Hit Mode");

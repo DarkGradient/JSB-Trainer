@@ -7,38 +7,73 @@ namespace jsb_new
     public static class PlayerColor
     {
         private const string FEATURE_NAME = "Custom Player Color";
+        private const string RGB_FEATURE_NAME = "Player RGB Mode";
+        private const string SLIDER_NAME = "Player Color";
 
-        // Статичные цвета для специальных режимов
         private static readonly Color OrangeColor = new Color(1f, 0.4f, 0f);        // Оранжевый
         private static readonly Color PurpleColor = new Color(0.7f, 0.1f, 0.95f);   // Фиолетовый
 
         private static float _hue = 0f;
+        private static float _selectedHue = 0f;
         private static bool _wasApplied = false;
+
+        public static bool Enabled
+        {
+            get => ModuleRegistry.IsActive(FEATURE_NAME);
+            set => ModuleRegistry.SetActive(FEATURE_NAME, value);
+        }
+
+        public static bool RgbEnabled
+        {
+            get => ModuleRegistry.IsActive(RGB_FEATURE_NAME);
+            set => ModuleRegistry.SetActive(RGB_FEATURE_NAME, value);
+        }
 
         public static void Initialize(HarmonyLib.Harmony harmony)
         {
+            // 1. Главный тумблер
             ModuleRegistry.RegisterCheckbox(
                 FEATURE_NAME,
-                () => ModuleRegistry.IsActive(FEATURE_NAME),
+                () => Enabled,
                                             (enabled) =>
                                             {
-                                                ModuleRegistry.SetActive(FEATURE_NAME, enabled);
-
+                                                Enabled = enabled;
                                                 HUDManager.CreateToast(
-                                                    enabled ? "RGB PLAYER: ON" : "RGB PLAYER: OFF",
+                                                    enabled ? "PLAYER COLOR: ON" : "PLAYER COLOR: OFF",
                                                     enabled ? Color.green : Color.gray,
                                                     1.5f
                                                 );
-
-                                                if (!enabled)
-                                                {
-                                                    ResetPlayerColor();
-                                                }
+                                                if (!enabled && !RgbEnabled) ResetPlayerColor();
                                             },
                                             isLocked: () => ModuleRegistry.IsActive("OrangeSoul") ||
                                             ModuleRegistry.IsActive("Orange SOUL Mode") ||
                                             ModuleRegistry.IsActive("PurpleSoul") ||
                                             ModuleRegistry.IsActive("Purple SOUL Mode")
+            );
+
+            // 2. RGB Режим
+            ModuleRegistry.RegisterCheckbox(
+                RGB_FEATURE_NAME,
+                () => RgbEnabled,
+                                            (enabled) =>
+                                            {
+                                                RgbEnabled = enabled;
+                                                HUDManager.CreateToast(
+                                                    enabled ? "PLAYER RGB: ON" : "PLAYER RGB: OFF",
+                                                    enabled ? Color.green : Color.gray,
+                                                    1.5f
+                                                );
+                                            }
+            );
+
+            // 3. Слайдер цвета
+            ModuleRegistry.RegisterSlider(
+                SLIDER_NAME,
+                0f,
+                (val) =>
+                {
+                    _selectedHue = val;
+                }
             );
 
             DebugStrings.Log($"[PlayerColor] Initialized!");
@@ -48,7 +83,6 @@ namespace jsb_new
         {
             Color? targetColor = GetTargetColorFromRegistry();
 
-            // Если ни один цветной режим не активен
             if (!targetColor.HasValue)
             {
                 if (_wasApplied)
@@ -64,6 +98,8 @@ namespace jsb_new
                 return;
 
             var actorList = gameScene.heroManager.actorList;
+            if (actorList == null) return;
+
             for (int i = 0; i < actorList.Count; i++)
             {
                 var actor = actorList[i];
@@ -89,11 +125,17 @@ namespace jsb_new
             if (ModuleRegistry.IsActive("PurpleSoul") || ModuleRegistry.IsActive("Purple SOUL Mode"))
                 return PurpleColor;
 
-            // 3. Приоритет: Динамическая RGB Радуга для кастомного цвета
-            if (ModuleRegistry.IsActive(FEATURE_NAME))
+            // 3. RGB Режим (теперь работает независимо, если включен сам RGB)
+            if (RgbEnabled)
             {
                 _hue = (_hue + Time.deltaTime * 0.5f) % 1.0f;
                 return Color.HSVToRGB(_hue, 1f, 1f);
+            }
+
+            // 4. Статичный цвет со слайдера (работает, если включен главный тумблер)
+            if (Enabled)
+            {
+                return Color.HSVToRGB(_selectedHue, 1f, 1f);
             }
 
             return null;
@@ -119,7 +161,6 @@ namespace jsb_new
             byte g = (byte)(Mathf.Clamp01(color.g) * 255);
             byte b = (byte)(Mathf.Clamp01(color.b) * 255);
 
-            // Формат 0xRRGGBB
             return (uint)((r << 16) | (g << 8) | b);
         }
 
@@ -129,11 +170,12 @@ namespace jsb_new
             if (gameScene == null || gameScene.heroManager == null)
                 return;
 
-            // Генерируем случайный чистый/яркий цвет (Tone: random, Saturation: 100%, Value: 100%)
             float randomHue = UnityEngine.Random.value;
             Color randomColor = Color.HSVToRGB(randomHue, 1f, 1f);
 
             var actorList = gameScene.heroManager.actorList;
+            if (actorList == null) return;
+
             for (int i = 0; i < actorList.Count; i++)
             {
                 var hero = actorList[i]?.TryCast<Hero>();

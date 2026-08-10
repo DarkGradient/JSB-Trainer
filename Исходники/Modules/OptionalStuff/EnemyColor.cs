@@ -7,8 +7,11 @@ namespace jsb_new
     public static class EnemyColor
     {
         private const string FEATURE_NAME = "Custom Enemy Color";
+        private const string RGB_FEATURE_NAME = "Enemy RGB Mode";
+        private const string SLIDER_NAME = "Enemy Color";
 
         private static float _hue = 0f;
+        private static float _selectedHue = 0f;
         private static bool _wasApplied = false;
 
         public static bool Enabled
@@ -17,9 +20,14 @@ namespace jsb_new
             set => ModuleRegistry.SetActive(FEATURE_NAME, value);
         }
 
+        public static bool RgbEnabled
+        {
+            get => ModuleRegistry.IsActive(RGB_FEATURE_NAME);
+            set => ModuleRegistry.SetActive(RGB_FEATURE_NAME, value);
+        }
+
         public static void Initialize(HarmonyLib.Harmony harmony)
         {
-            // Патчим создание видео-компонента у всех врагов и объектов
             HarmonyLib.Harmony.CreateAndPatchAll(typeof(Patch_RenderComponent_AddToActor));
 
             ModuleRegistry.RegisterCheckbox(
@@ -28,15 +36,41 @@ namespace jsb_new
                                             (enabled) =>
                                             {
                                                 Enabled = enabled;
-
                                                 HUDManager.CreateToast(
-                                                    enabled ? "RGB ENEMIES: ON" : "RGB ENEMIES: OFF",
+                                                    enabled ? "ENEMY COLOR: ON" : "ENEMY COLOR: OFF",
                                                     enabled ? Color.green : Color.gray,
                                                     1.5f
                                                 );
 
-                                                RefreshAllEnemiesOnScene(enabled ? GetCurrentColor() : GetRandomColor());
+                                                if (enabled) RefreshAllEnemiesOnScene(GetActiveColor());
+                                                else RefreshAllEnemiesOnScene(GetRandomColor());
                                             }
+            );
+
+            ModuleRegistry.RegisterCheckbox(
+                RGB_FEATURE_NAME,
+                () => RgbEnabled,
+                                            (enabled) =>
+                                            {
+                                                RgbEnabled = enabled;
+                                                if (Enabled)
+                                                {
+                                                    RefreshAllEnemiesOnScene(GetActiveColor());
+                                                }
+                                            }
+            );
+
+            ModuleRegistry.RegisterSlider(
+                SLIDER_NAME,
+                0f,
+                (val) =>
+                {
+                    _selectedHue = val;
+                    if (Enabled && !RgbEnabled)
+                    {
+                        RefreshAllEnemiesOnScene(GetActiveColor());
+                    }
+                }
             );
 
             DebugStrings.Log("[EnemyColor] Initialized!");
@@ -48,23 +82,26 @@ namespace jsb_new
             {
                 if (_wasApplied)
                 {
-                    // Выключили RGB? Рандомим цвета всем объектам
                     RefreshAllEnemiesOnScene(GetRandomColor());
                     _wasApplied = false;
                 }
                 return;
             }
 
-            // Каждый кадр переливашка
-            Color currentColor = GetCurrentColor();
-            RefreshAllEnemiesOnScene(currentColor);
+            // Заставляем перекрашивать в Update всегда, когда включен кастомный цвет
+            RefreshAllEnemiesOnScene(GetActiveColor());
             _wasApplied = true;
         }
 
-        private static Color GetCurrentColor()
+        private static Color GetActiveColor()
         {
-            _hue = (_hue + Time.deltaTime * 0.5f) % 1.0f;
-            return Color.HSVToRGB(_hue, 1f, 1f);
+            if (RgbEnabled)
+            {
+                _hue = (_hue + Time.deltaTime * 0.5f) % 1.0f;
+                return Color.HSVToRGB(_hue, 1f, 1f);
+            }
+
+            return Color.HSVToRGB(_selectedHue, 1f, 1f);
         }
 
         private static Color GetRandomColor()
@@ -87,7 +124,6 @@ namespace jsb_new
                 if (actor == null || actor.destroyed)
                     continue;
 
-                // Перекрашиваем абсолютно любые актеры с рендерером
                 if (actor.renderComponent != null)
                 {
                     ApplyColorToRenderComponent(actor.renderComponent, color);
@@ -113,7 +149,6 @@ namespace jsb_new
             return (uint)((r << 16) | (g << 8) | b);
         }
 
-        // Ловим спавн ВСЕХ объектов (CircleFromEdges, Beam, Enemy и т.д.)
         [HarmonyPatch(typeof(RenderComponent), nameof(RenderComponent.addToActor))]
         private static class Patch_RenderComponent_AddToActor
         {
@@ -122,10 +157,9 @@ namespace jsb_new
                 if (!Enabled || __result == null)
                     return;
 
-                // Если это спавнящийся вражеский объект
                 if (actor is Spawn)
                 {
-                    ApplyColorToRenderComponent(__result, GetCurrentColor());
+                    ApplyColorToRenderComponent(__result, GetActiveColor());
                 }
             }
         }
