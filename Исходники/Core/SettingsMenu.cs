@@ -163,6 +163,15 @@ namespace jsb_new
 
         private static void DrawItem(string name)
         {
+            // 1. Сначала проверяем, не кнопка ли это
+            var button = ModuleRegistry.Buttons.Find(b => b.Name == name);
+            if (button != null)
+            {
+                DrawButton(button);
+                return;
+            }
+
+            // 2. Чекбокс
             var checkbox = ModuleRegistry.Checkboxes.Find(c => c.Name == name);
             if (checkbox != null)
             {
@@ -170,6 +179,7 @@ namespace jsb_new
                 return;
             }
 
+            // 3. Слайдер
             var slider = ModuleRegistry.Sliders.Find(s => s.Name == name);
             if (slider != null)
             {
@@ -178,6 +188,17 @@ namespace jsb_new
             }
 
             GUILayout.Label($"  {name} (не найдено)", _lockedStyle);
+        }
+
+        private static void DrawButton(ModuleRegistry.ButtonDef btn)
+        {
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button(btn.Name, _actionButtonStyle, GUILayout.Height(26f)))
+            {
+                btn.OnClick?.Invoke();
+            }
+            GUILayout.EndHorizontal();
+            CustomSpace(2f);
         }
 
         private static void DrawCheckbox(ModuleRegistry.CheckboxDef cb)

@@ -66,6 +66,9 @@ namespace jsb_new
             Item("Always black BG");
             Item("Hide Timeline");
             Item("FPS Unlock (400 FPS)");
+
+            Header("Троллинг");
+            Item("Force Rewind Music");
         }
 
         public static IReadOnlyList<Entry> GetEntries() => _layout;

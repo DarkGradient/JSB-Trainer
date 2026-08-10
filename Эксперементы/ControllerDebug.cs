@@ -33,24 +33,24 @@ namespace jsb_new
         public static void Initialize()
         {
             // --- LED Меню ---
-            ModuleRegistry.RegisterCheckbox("Optional Stuff", "Enable Controller LED", () => LedEnabled, v => LedEnabled = v, order: 80);
-            ModuleRegistry.RegisterCheckbox("Optional Stuff", "LED: Sync Player Color", () => PlayerSync, v => PlayerSync = v, order: 81);
-            ModuleRegistry.RegisterCheckbox("Optional Stuff", "LED Effect: Breathe", () => BreatheEffect, v => BreatheEffect = v, order: 82);
-            ModuleRegistry.RegisterSlider("Optional Stuff", "LED Breathe Speed", 0.5f, v => BreatheSpeed = v, order: 83);
-            ModuleRegistry.RegisterCheckbox("Optional Stuff", "LED Effect: Rainbow", () => RainbowEffect, v => RainbowEffect = v, order: 84);
-            ModuleRegistry.RegisterSlider("Optional Stuff", "LED Rainbow Speed", 0.3f, v => RainbowSpeed = v, order: 85);
-            ModuleRegistry.RegisterCheckbox("Optional Stuff", "LED Effect: Flash", () => FlashEffect, v => FlashEffect = v, order: 86);
-            ModuleRegistry.RegisterSlider("Optional Stuff", "LED Flash Speed", 0.5f, v => FlashSpeed = v, order: 87);
-            ModuleRegistry.RegisterSlider("Optional Stuff", "LED Red", 1f, v => Red = v, order: 88);
-            ModuleRegistry.RegisterSlider("Optional Stuff", "LED Green", 0f, v => Green = v, order: 89);
-            ModuleRegistry.RegisterSlider("Optional Stuff", "LED Blue", 0f, v => Blue = v, order: 90);
+            ModuleRegistry.RegisterCheckbox("Enable Controller LED", () => LedEnabled, v => LedEnabled = v);
+            ModuleRegistry.RegisterCheckbox("LED: Sync Player Color", () => PlayerSync, v => PlayerSync = v);
+            ModuleRegistry.RegisterCheckbox("LED Effect: Breathe", () => BreatheEffect, v => BreatheEffect = v);
+            ModuleRegistry.RegisterSlider("LED Breathe Speed", 0.5f, v => BreatheSpeed = v);
+            ModuleRegistry.RegisterCheckbox("LED Effect: Rainbow", () => RainbowEffect, v => RainbowEffect = v);
+            ModuleRegistry.RegisterSlider("LED Rainbow Speed", 0.3f, v => RainbowSpeed = v);
+            ModuleRegistry.RegisterCheckbox("LED Effect: Flash", () => FlashEffect, v => FlashEffect = v);
+            ModuleRegistry.RegisterSlider("LED Flash Speed", 0.5f, v => FlashSpeed = v);
+            ModuleRegistry.RegisterSlider("LED Red", 1f, v => Red = v);
+            ModuleRegistry.RegisterSlider("LED Green", 0f, v => Green = v);
+            ModuleRegistry.RegisterSlider("LED Blue", 0f, v => Blue = v);
 
             // --- Vibration Debug Меню ---
-            ModuleRegistry.RegisterCheckbox("Optional Stuff", "Vib Test: Enable", () => VibEnabled, v => VibEnabled = v, order: 91);
-            ModuleRegistry.RegisterSlider("Optional Stuff", "Vib Left (Heavy Motor)", 0.5f, v => VibLeft = v, order: 92);
-            ModuleRegistry.RegisterSlider("Optional Stuff", "Vib Right (Light Motor)", 0.5f, v => VibRight = v, order: 93);
-            ModuleRegistry.RegisterCheckbox("Optional Stuff", "Vib Effect: Pulse", () => VibPulse, v => VibPulse = v, order: 94);
-            ModuleRegistry.RegisterSlider("Optional Stuff", "Vib Pulse Speed", 0.5f, v => VibPulseSpeed = v, order: 95);
+            ModuleRegistry.RegisterCheckbox("Vib Test: Enable", () => VibEnabled, v => VibEnabled = v);
+            ModuleRegistry.RegisterSlider("Vib Left (Heavy Motor)", 0.5f, v => VibLeft = v);
+            ModuleRegistry.RegisterSlider("Vib Right (Light Motor)", 0.5f, v => VibRight = v);
+            ModuleRegistry.RegisterCheckbox("Vib Effect: Pulse", () => VibPulse, v => VibPulse = v);
+            ModuleRegistry.RegisterSlider("Vib Pulse Speed", 0.5f, v => VibPulseSpeed = v);
         }
 
         public static void Update()
@@ -83,7 +83,6 @@ namespace jsb_new
 
         private static void HandleVibration(Joystick joystick)
         {
-            // Проверяем, поддерживает ли текущий геймпад вибрацию
             if (!joystick.supportsVibration) return;
 
             if (VibEnabled)

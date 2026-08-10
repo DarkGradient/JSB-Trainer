@@ -1,4 +1,3 @@
-// using System;
 using HarmonyLib;
 using Il2Cpp;
 using MelonLoader;
@@ -11,7 +10,6 @@ namespace jsb_new
         private static float _lastTriggerTime = 0f;
         private const float COOLDOWN = 3.5f;
 
-        // Кэш, чтобы не искать каждый раз
         private static ActorMultiplayerLevelLogic? _cachedLogic;
 
         public static void Initialize(HarmonyLib.Harmony harmony)
@@ -22,24 +20,24 @@ namespace jsb_new
                           postfix: new HarmonyMethod(typeof(RewindTroll), nameof(OnLogicStarted))
             );
 
-            DebugStrings.Log("RewindTroll initialized (R key + cache)");
+            // Регистрируем кнопку в меню
+            ModuleRegistry.RegisterButton("Force Rewind Music", TryForceRewind);
         }
 
         private static void OnLogicStarted(ActorMultiplayerLevelLogic __instance)
         {
             _cachedLogic = __instance;
-            DebugStrings.Log("RewindTroll: cached ActorMultiplayerLevelLogic");
         }
 
         public static void Update()
         {
-            if (!Input.GetKeyDown(KeyCode.R))
-                return;
-
-            TryForceRewind();
+            if (Input.GetKeyDown(KeyCode.R))
+            {
+                TryForceRewind();
+            }
         }
 
-        private static void TryForceRewind()
+        public static void TryForceRewind()
         {
             if (Time.unscaledTime - _lastTriggerTime < COOLDOWN)
             {
@@ -85,7 +83,6 @@ namespace jsb_new
 
                 _lastTriggerTime = Time.unscaledTime;
                 HUDManager.CreateToast("Rewind отправлен", Color.green, 1.6f);
-                DebugStrings.Log("RewindTroll: rewindMusic() OK");
             }
             catch (Exception ex)
             {
@@ -97,11 +94,9 @@ namespace jsb_new
 
         private static ActorMultiplayerLevelLogic? GetLogic()
         {
-            // Сначала пробуем кэш
             if (_cachedLogic != null && !_cachedLogic.destroyed)
                 return _cachedLogic;
 
-            // Если кэш протух — сбрасываем
             _cachedLogic = null;
             return null;
         }

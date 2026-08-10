@@ -1,32 +1,60 @@
-﻿// using System;
-// using System.Collections.Generic;
-using System.Reflection;
+﻿using System.Reflection;
 using HarmonyLib;
 using UnityEngine;
 using Il2Cpp;
 using Il2CppRewired;
 using Il2CppRewired.ControllerExtensions;
+using MelonLoader;
 
 namespace jsb_new
 {
     public static class ControllerGameSyncModule
     {
-        // ── Debug ──────────────────────────────────────────────────────────────
-        /// <summary>Set to true to log player color resolution every ~2 seconds.</summary>
-        private const bool EnableColorDebug = false;
+        // ── Настройки модуля (управляются из меню) ───────────────────────────
+        public static bool Enabled { get; set; } = true;
+        public static bool LightbarEnabled { get; set; } = true;
+        public static bool VibrationEnabled { get; set; } = true;
 
-        // ── State ──────────────────────────────────────────────────────────────
-        private static readonly Dictionary<int, float> _hitTimers  = new();
+        // ── Debug ──────────────────────────────────────────────────────────────
+        /// <summary>Включите для вывода логов цвета игрока каждые ~2 секунды.</summary>
+        private const bool EnableColorDebug = true;
+
+        // ── Внутреннее состояние ──────────────────────────────────────────────
+        private static readonly Dictionary<int, float> _hitTimers = new();
         private static readonly Dictionary<int, float> _dashTimers = new();
 
         private static FieldInfo? _onlinePlayerIdField;
+        private static bool _wasVibratingLastFrame = false;
 
         // ── Lifecycle ──────────────────────────────────────────────────────────
         public static void Initialize(HarmonyLib.Harmony harmony)
         {
             ArgumentNullException.ThrowIfNull(harmony);
+
+            // Патчи для отслеживания урона и рывка
             HarmonyLib.Harmony.CreateAndPatchAll(typeof(Patch_HeroCollisionWithEnemy));
             HarmonyLib.Harmony.CreateAndPatchAll(typeof(Patch_HeroDashComponent));
+
+            // Регистрация в меню и конфиге MelonLoader
+            ModuleRegistry.RegisterCheckbox(
+                "Controller Sync",
+                () => Enabled,
+                                            val => Enabled = val
+            );
+
+            ModuleRegistry.RegisterCheckbox(
+                "DS4 Lightbar",
+                () => LightbarEnabled,
+                                            val => LightbarEnabled = val
+            );
+
+            ModuleRegistry.RegisterCheckbox(
+                "Controller Vibration",
+                () => VibrationEnabled,
+                                            val => VibrationEnabled = val
+            );
+
+            DebugStrings.Log("[ControllerSync] Module initialized and bound to ModuleRegistry.");
         }
 
         public static void Update()
@@ -36,10 +64,24 @@ namespace jsb_new
             var controllers = ReInput.controllers;
             if (controllers == null) return;
 
+            // Если модуль или вибрация отключены, но на прошлом кадре вибрация работала — гасим её
+            if (!Enabled || !VibrationEnabled)
+            {
+                if (_wasVibratingLastFrame)
+                {
+                    StopAllVibrations();
+                    _wasVibratingLastFrame = false;
+                }
+
+                if (!Enabled) return;
+            }
+
             var playerManager = PlayerManager.instance;
             if (playerManager == null) return;
 
+            bool anyVibrationActive = false;
             int joystickCount = controllers.joystickCount;
+
             for (int i = 0; i < joystickCount; i++)
             {
                 var joystick = controllers.Joysticks[i];
@@ -48,59 +90,71 @@ namespace jsb_new
                 int controllerId = joystick.id;
                 var ds4 = joystick.GetExtension<IDualShock4Extension>();
 
-                bool isHitting = _hitTimers.TryGetValue(controllerId, out float hitTimer)  && hitTimer  > 0f;
+                bool isHitting = _hitTimers.TryGetValue(controllerId, out float hitTimer) && hitTimer > 0f;
                 bool isDashing = _dashTimers.TryGetValue(controllerId, out float dashTimer) && dashTimer > 0f;
 
                 var metaPlayer = playerManager.GetPlayerByControllerId(controllerId);
                 bool isDead = metaPlayer?.modelPlayer != null && IsPlayerDead(metaPlayer.modelPlayer);
 
-                // ── 1. Highest priority: damage / death ───────────────────────
+                // ── 1. Высший приоритет: Урон / Смерть ─────────────────────────
                 if (isHitting || isDead)
                 {
                     if (isHitting)
                         _hitTimers[controllerId] = hitTimer - Time.deltaTime;
 
-                    ds4?.SetLightColor(1f, 0f, 0f); // bright red
+                    if (LightbarEnabled && ds4 != null)
+                        ds4.SetLightColor(1f, 0f, 0f); // Ярко-красный
 
-                    if (joystick.supportsVibration)
+                        if (VibrationEnabled && joystick.supportsVibration)
+                        {
+                            if (isHitting)
+                            {
+                                joystick.SetVibration(1.0f, 1.0f);
+                                anyVibrationActive = true;
+                            }
+                            else
+                            {
+                                joystick.StopVibration();
+                            }
+                        }
+                        continue;
+                }
+
+                // ── 2. Приоритет рывка (Dash) ──────────────────────────────────
+                if (isDashing)
+                {
+                    _dashTimers[controllerId] = dashTimer - Time.deltaTime;
+
+                    if (VibrationEnabled && joystick.supportsVibration)
                     {
-                        if (isHitting) joystick.SetVibration(1.0f, 1.0f);
-                        else           joystick.StopVibration();
+                        joystick.SetVibration(0.0f, 0.7f);
+                        anyVibrationActive = true;
                     }
                     continue;
                 }
 
-                // ── 2. Dash priority ──────────────────────────────────────────
-                if (isDashing)
-                {
-                    _dashTimers[controllerId] = dashTimer - Time.deltaTime;
-                    if (joystick.supportsVibration)
-                        joystick.SetVibration(0.0f, 0.7f);
-                    continue;
-                }
-
-                // ── 3. Background effects ─────────────────────────────────────
+                // ── 3. Фоновые эффекты и цвета ─────────────────────────────────
                 Color targetColor = Color.white;
-                float vibLeft  = 0f;
+                float vibLeft = 0f;
                 float vibRight = 0f;
 
                 if (OneHit.Enabled)
                 {
-                    float bpm          = OneHit.TrueOneHitEnabled ? 120f : 80f;
+                    float bpm = OneHit.TrueOneHitEnabled ? 120f : 80f;
                     float beatInterval = 60f / bpm;
-                    float t            = Time.unscaledTime % beatInterval;
-                    bool  isBeat       = (t < 0.1f) || (t > 0.2f && t < 0.3f);
+                    float t = Time.unscaledTime % beatInterval;
+                    bool isBeat = (t < 0.1f) || (t > 0.2f && t < 0.3f);
 
                     targetColor = isBeat
-                        ? new Color(1f, 0f, 0f)
-                        : new Color(0.15f, 0f, 0f);
+                    ? new Color(1f, 0f, 0f)
+                    : new Color(0.15f, 0f, 0f);
 
                     if (isBeat) vibRight = 0.15f;
                 }
                 else if (OrangeSoul.Enabled)
                 {
                     targetColor = new Color(1.0f, 0.4f, 0.0f);
-                    vibLeft     = 0.03f;
+                    vibLeft = 0.03f;
                 }
                 else if (PurpleSoul.Enabled)
                 {
@@ -114,32 +168,39 @@ namespace jsb_new
                         LogColorDebug(controllerId, metaPlayer, targetColor);
                 }
 
-                // Apply lightbar
-                if (ds4 != null)
+                // Применяем цвет подсветки (Lightbar)
+                if (LightbarEnabled && ds4 != null)
                 {
                     Color calibrated = CalibrateForDS4Lightbar(targetColor);
                     ds4.SetLightColor(calibrated.r, calibrated.g, calibrated.b);
                 }
 
-                // Apply vibration
+                // Применяем вибрацию
                 if (joystick.supportsVibration)
                 {
-                    if (vibLeft > 0f || vibRight > 0f)
+                    if (VibrationEnabled && (vibLeft > 0f || vibRight > 0f))
+                    {
                         joystick.SetVibration(vibLeft, vibRight);
+                        anyVibrationActive = true;
+                    }
                     else
+                    {
                         joystick.StopVibration();
+                    }
                 }
 
-                // Cleanup expired timers
-                if (!isHitting && _hitTimers.ContainsKey(controllerId))  _hitTimers.Remove(controllerId);
+                // Очистка таймеров
+                if (!isHitting && _hitTimers.ContainsKey(controllerId)) _hitTimers.Remove(controllerId);
                 if (!isDashing && _dashTimers.ContainsKey(controllerId)) _dashTimers.Remove(controllerId);
             }
+
+            _wasVibratingLastFrame = anyVibrationActive;
         }
 
-        // ── Public event hooks ─────────────────────────────────────────────────
+        // ── События игры ───────────────────────────────────────────────────────
         public static void OnHeroHit(Hero? hero)
         {
-            if (hero?.metaPlayer == null) return;
+            if (!Enabled || hero?.metaPlayer == null) return;
             int controllerId = hero.metaPlayer.getControllerId();
             if (controllerId >= 0)
                 _hitTimers[controllerId] = 0.4f;
@@ -147,7 +208,7 @@ namespace jsb_new
 
         public static void OnHeroDash(Hero? hero)
         {
-            if (hero?.metaPlayer == null) return;
+            if (!Enabled || hero?.metaPlayer == null) return;
             int controllerId = hero.metaPlayer.getControllerId();
             if (controllerId >= 0)
                 _dashTimers[controllerId] = 0.1f;
@@ -155,7 +216,7 @@ namespace jsb_new
 
         public static void PlayHapticClick(float leftMotor, float rightMotor, float durationSec = 0.1f)
         {
-            if (!ReInput.isReady || ReInput.controllers == null) return;
+            if (!Enabled || !VibrationEnabled || !ReInput.isReady || ReInput.controllers == null) return;
 
             var player = ReInput.players.GetSystemPlayer();
             if (player == null) return;
@@ -166,13 +227,31 @@ namespace jsb_new
                 var joystick = player.controllers.Joysticks[i];
                 if (joystick != null && joystick.supportsVibration)
                 {
-                    joystick.SetVibration(0, leftMotor,  durationSec);
+                    joystick.SetVibration(0, leftMotor, durationSec);
                     joystick.SetVibration(1, rightMotor, durationSec);
                 }
             }
         }
 
-        // ── Helpers ────────────────────────────────────────────────────────────
+        // ── Вспомогательные методы ─────────────────────────────────────────────
+        private static void StopAllVibrations()
+        {
+            try
+            {
+                if (!ReInput.isReady || ReInput.controllers == null) return;
+
+                var controllers = ReInput.controllers;
+                int count = controllers.joystickCount;
+                for (int i = 0; i < count; i++)
+                {
+                    var joystick = controllers.Joysticks[i];
+                    if (joystick != null && joystick.supportsVibration)
+                        joystick.StopVibration();
+                }
+            }
+            catch { /* Игнорируем исключения при завершении работы */ }
+        }
+
         private static bool IsPlayerDead(ModelPlayer? modelPlayer)
         {
             if (modelPlayer == null) return false;
@@ -202,7 +281,7 @@ namespace jsb_new
         {
             try
             {
-                // Online: colour comes from lobby slot (onlinePlayerId), not the selected figure.
+                // В онлайне цвет зависит от лобби-слота (onlinePlayerId), а не от выбранного скина
                 if (MetaGameProgress.instance?.modelTypeOfGame?.isOnline() == true)
                 {
                     if (_onlinePlayerIdField == null)
@@ -226,7 +305,7 @@ namespace jsb_new
             }
             catch { /* ignore */ }
 
-            // Local / offline: colour always comes from the figure.
+            // Локальная игра: цвет берётся из модели игрока
             if (metaPlayer.modelPlayer != null)
                 return UintToColor(metaPlayer.modelPlayer.color);
 
@@ -236,14 +315,13 @@ namespace jsb_new
         private static Color UintToColor(uint hexColor)
         {
             float r = ((hexColor >> 16) & 0xFF) / 255f;
-            float g = ((hexColor >>  8) & 0xFF) / 255f;
-            float b = ( hexColor        & 0xFF) / 255f;
+            float g = ((hexColor >> 8) & 0xFF) / 255f;
+            float b = (hexColor & 0xFF) / 255f;
             return new Color(r, g, b, 1f);
         }
 
         /// <summary>
-        /// Calibrates colours for the physical LEDs of a DualShock 4 lightbar
-        /// (green channel is less bright, so we apply a stronger gamma).
+        /// Калибровка гаммы цветов под диоды DualShock 4
         /// </summary>
         private static Color CalibrateForDS4Lightbar(Color c)
         {
@@ -262,7 +340,7 @@ namespace jsb_new
                 catch { /* ignore */ }
             }
 
-            MelonLoader.MelonLogger.Msg(
+            MelonLogger.Msg(
                 $"[ColorDebug] controllerId={controllerId} " +
                 $"isOnline={MetaGameProgress.instance?.modelTypeOfGame?.isOnline()} " +
                 $"modelPlayer.id={metaPlayer.modelPlayer.id} " +
@@ -272,7 +350,7 @@ namespace jsb_new
                 $"-> RGB({targetColor.r:F2},{targetColor.g:F2},{targetColor.b:F2})");
         }
 
-        // ── Harmony patches ────────────────────────────────────────────────────
+        // ── Harmony Patches ────────────────────────────────────────────────────
         [HarmonyPatch(typeof(HeroCollisionWithEnemy), "hitByEnemy")]
         private static class Patch_HeroCollisionWithEnemy
         {

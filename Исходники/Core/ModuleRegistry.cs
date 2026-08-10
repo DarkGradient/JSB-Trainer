@@ -75,6 +75,23 @@ namespace jsb_new
             public Action<float> OnChanged { get; set; } = null!;
         }
 
+        public class ButtonDef
+        {
+            public string Name { get; set; } = null!;
+            public Action OnClick { get; set; } = null!;
+        }
+
+        public static List<ButtonDef> Buttons = new List<ButtonDef>();
+
+        public static void RegisterButton(string name, Action onClick)
+        {
+            Buttons.Add(new ButtonDef
+            {
+                Name = name,
+                OnClick = onClick
+            });
+        }
+
         public static List<CheckboxDef> Checkboxes = new List<CheckboxDef>();
         public static List<SliderDef> Sliders = new List<SliderDef>();
 
