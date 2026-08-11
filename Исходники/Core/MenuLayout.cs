@@ -47,6 +47,7 @@ namespace jsb_new
             // --- ВКЛАДКА 2: ГЕЙМПЛЕЙ ---
             Tab("Геймплей");
             Header("Модификаторы");
+            Item("Nightcore Mode (NC)");
             Item("One-Hit Mode");
             Item("True One-Hit (Beta)");
             Item("Purple SOUL Mode");
@@ -66,9 +67,14 @@ namespace jsb_new
             Item("Always black BG");
             Item("Hide Timeline");
             Item("FPS Unlock (400 FPS)");
+            Item("Focus Mode (Shift)");
+            Item("Focus Speed Multiplier");
             Item("Force Rewind Music");
 
             Tab("DEBUG");
+            Item("[DEBUG] Hidden Mode");
+            Item("[DEBUG] Full Invisibility");
+            Item("[DEBUG] HD Delay");
             Item("Scan Scene (Deep Dump)");
         }
 
