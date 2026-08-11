@@ -27,12 +27,16 @@ namespace jsb_new
                 MelonLogger.Error($"==== DASH COOLDOWN PATCH: FAILED - {ex.Message} ====");
             }
 
-            ModuleRegistry.RegisterSlider("Dash Cooldown", 1.0f,
-                                          (val) =>
-                                          {
-                                              DashCooldownValue = val * 10f;
-                                              DebugStrings.Log($"Dash cooldown set to {DashCooldownValue}");
-                                          }
+            ModuleRegistry.RegisterSlider(
+                "Dash Cooldown",
+                0f,     // min
+                1f,     // max
+                1.0f,   // defaultValue
+                (val) =>
+                {
+                    DashCooldownValue = val * 10f;
+                    DebugStrings.Log($"Dash cooldown set to {DashCooldownValue}");
+                }
             );
 
             HUDManager.CreateHUD(

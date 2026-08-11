@@ -71,6 +71,8 @@ namespace jsb_new
         public class SliderDef
         {
             public string Name { get; set; } = null!;
+            public float MinValue { get; set; }
+            public float MaxValue { get; set; }
             public float DefaultValue { get; set; }
             public Action<float> OnChanged { get; set; } = null!;
         }
@@ -139,7 +141,7 @@ namespace jsb_new
         }
 
         // Порядок и категория в меню больше не задаются здесь — см. MenuLayout.cs.
-        public static void RegisterSlider(string name, float defaultValue, Action<float> onChanged)
+        public static void RegisterSlider(string name, float minValue, float maxValue, float defaultValue, Action<float> onChanged)
         {
             string key = name.Replace(" ", "_");
 
@@ -156,6 +158,8 @@ namespace jsb_new
             Sliders.Add(new SliderDef
             {
                 Name = name,
+                MinValue = minValue, // <-- Забыл передать!
+                MaxValue = maxValue, // <-- Забыл передать!
                 DefaultValue = entry.Value,
                 OnChanged = autoSavingOnChanged
             });

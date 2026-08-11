@@ -62,15 +62,17 @@ namespace jsb_new
 
             ModuleRegistry.RegisterSlider(
                 SLIDER_NAME,
-                0f,
-                (val) =>
+                0f,     // min (красный)
+            1f,     // max (полный круг HSV)
+            0f,     // defaultValue
+            (val) =>
+            {
+                _selectedHue = val;
+                if (Enabled && !RgbEnabled)
                 {
-                    _selectedHue = val;
-                    if (Enabled && !RgbEnabled)
-                    {
-                        RefreshAllEnemiesOnScene(GetActiveColor());
-                    }
+                    RefreshAllEnemiesOnScene(GetActiveColor());
                 }
+            }
             );
 
             DebugStrings.Log("[EnemyColor] Initialized!");

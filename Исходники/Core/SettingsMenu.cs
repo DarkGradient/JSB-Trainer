@@ -236,7 +236,8 @@ namespace jsb_new
             GUILayout.BeginHorizontal();
             GUILayout.Label($"{sl.Name}: {val:0.00}", _labelStyle, GUILayout.Width(200f));
 
-            float newVal = GUILayout.HorizontalSlider(val, 0f, 1f, _sliderStyle, _sliderThumbStyle);
+            // Берем реальные минимальные и максимальные границы из объекта SliderDef!
+            float newVal = GUILayout.HorizontalSlider(val, sl.MinValue, sl.MaxValue, _sliderStyle, _sliderThumbStyle);
 
             if (Mathf.Abs(newVal - val) > 0.001f)
             {

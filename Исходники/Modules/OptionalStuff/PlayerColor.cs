@@ -69,7 +69,9 @@ namespace jsb_new
             // 3. Слайдер цвета
             ModuleRegistry.RegisterSlider(
                 SLIDER_NAME,
-                0f,
+                0f,     // min
+                1f,     // max
+                0f,     // defaultValue
                 (val) =>
                 {
                     _selectedHue = val;

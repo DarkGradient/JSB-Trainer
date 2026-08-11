@@ -33,15 +33,17 @@ namespace jsb_new
                                             }
             );
 
-            // 0.55f = ~360°/s по умолчанию
+            // Если слайдер принимает диапазон [-100, 100]:
             ModuleRegistry.RegisterSlider(
                 SLIDER_NAME,
-                0.55f,
-                (sliderValue) =>
-                {
-                    // Сохраняем конвертацию
-                    RotationSpeed = Mathf.Lerp(-1800f, 1800f, sliderValue);
-                }
+                -100f,  // min (обратное вращение)
+            100f,   // max (быстро вперед)
+            100f,   // defaultValue
+            (sliderValue) =>
+            {
+                // При sliderValue от -100 до 100 получаем RotationSpeed от -1800 до 1800
+                RotationSpeed = (sliderValue / 100f) * 1800f;
+            }
             );
 
             DebugStrings.Log("[EnemySpinner] Initialized!");
