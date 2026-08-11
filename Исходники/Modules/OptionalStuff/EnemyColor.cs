@@ -43,7 +43,7 @@ namespace jsb_new
                                                 );
 
                                                 if (enabled) RefreshAllEnemiesOnScene(GetActiveColor());
-                                                else RefreshAllEnemiesOnScene(GetRandomColor());
+                                                else ResetAllEnemiesOnScene();
                                             }
             );
 
@@ -82,7 +82,7 @@ namespace jsb_new
             {
                 if (_wasApplied)
                 {
-                    RefreshAllEnemiesOnScene(GetRandomColor());
+                    ResetAllEnemiesOnScene();
                     _wasApplied = false;
                 }
                 return;
@@ -104,18 +104,38 @@ namespace jsb_new
             return Color.HSVToRGB(_selectedHue, 1f, 1f);
         }
 
-        private static Color GetRandomColor()
-        {
-            return Color.HSVToRGB(UnityEngine.Random.value, 1f, 1f);
-        }
-
         public static void RefreshAllEnemiesOnScene(Color color)
         {
             var gameScene = GameScene.instance;
-            if (gameScene == null || gameScene.enemyManager == null)
+            if (gameScene == null)
                 return;
 
-            var actorList = gameScene.enemyManager.actorList;
+            // enemyManager: враги, боссы, спайки, лучи и т.п. (Actor / Enemy / Spawn)
+            RecolorEnemyManager(gameScene.enemyManager, color);
+
+            // fxManager: GameEffect и все его потомки (FxBossNewGameCircle, BossNewGamePart1Spiral и т.д.)
+            // регистрируются САМИ через GameScene.instance.fxManager.add(this) внутри GameEffect,
+            // а не в enemyManager — поэтому без этого прохода они остаются некрашеными.
+            RecolorEnemyManager(gameScene.fxManager, color);
+        }
+
+        // Настоящий сброс: не подбор цвета, а полный clear() colorTransform-а,
+        // после чего DisplayObject возвращается к своему оригинальному виду.
+        public static void ResetAllEnemiesOnScene()
+        {
+            var gameScene = GameScene.instance;
+            if (gameScene == null)
+                return;
+
+            ResetEnemyManager(gameScene.enemyManager);
+            ResetEnemyManager(gameScene.fxManager);
+        }
+
+        // Принимает ActorObjectManager (тип и enemyManager, и fxManager) — не типизируем
+        // саму коллекцию actorList явно, т.к. не видели её точную сигнатуру (VectorFlash<T>/List<T>/др.).
+        private static void RecolorEnemyManager(ActorObjectManager manager, Color color)
+        {
+            var actorList = manager?.actorList;
             if (actorList == null) return;
 
             for (int i = 0; i < actorList.Count; i++)
@@ -131,6 +151,21 @@ namespace jsb_new
             }
         }
 
+        private static void ResetEnemyManager(ActorObjectManager manager)
+        {
+            var actorList = manager?.actorList;
+            if (actorList == null) return;
+
+            for (int i = 0; i < actorList.Count; i++)
+            {
+                var actor = actorList[i];
+                if (actor == null || actor.destroyed)
+                    continue;
+
+                ResetRenderComponent(actor.renderComponent);
+            }
+        }
+
         public static void ApplyColorToRenderComponent(RenderComponent renderComp, Color color)
         {
             if (renderComp == null || renderComp.animView == null || renderComp.animView.anim == null)
@@ -138,6 +173,14 @@ namespace jsb_new
 
             uint uintColor = ColorToUint(color);
             Utils.setColorUnity(renderComp.animView.anim, uintColor);
+        }
+
+        public static void ResetRenderComponent(RenderComponent renderComp)
+        {
+            if (renderComp == null || renderComp.animView == null || renderComp.animView.anim == null)
+                return;
+
+            Utils.resetColor(renderComp.animView.anim);
         }
 
         private static uint ColorToUint(Color color)

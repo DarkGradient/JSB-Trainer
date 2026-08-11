@@ -17,7 +17,7 @@ namespace jsb_new
 
         // ── Debug ──────────────────────────────────────────────────────────────
         /// <summary>Включите для вывода логов цвета игрока каждые ~2 секунды.</summary>
-        private const bool EnableColorDebug = true;
+        private const bool EnableColorDebug = false;
 
         // ── Внутреннее состояние ──────────────────────────────────────────────
         private static readonly Dictionary<int, float> _hitTimers = new();
@@ -326,7 +326,7 @@ namespace jsb_new
         private static Color CalibrateForDS4Lightbar(Color c)
         {
             float r = Mathf.Pow(c.r, 1.6f);
-            float g = Mathf.Pow(c.g, 2.0f);
+            float g = Mathf.Pow(c.g, 2.6f);
             float b = Mathf.Pow(c.b, 1.6f);
             return new Color(r, g, b, 1f);
         }

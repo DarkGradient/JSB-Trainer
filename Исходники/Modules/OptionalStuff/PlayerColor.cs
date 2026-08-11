@@ -164,14 +164,26 @@ namespace jsb_new
             return (uint)((r << 16) | (g << 8) | b);
         }
 
+        // Настоящий сброс: Utils.resetColor делает d.transform.colorTransform.clear(),
+        // то есть полностью снимает наш тинт и возвращает оригинальный вид героя —
+        // не нужно ни угадывать цвет, ни кэшировать его заранее.
+        private static void ResetColorOfHero(Hero hero)
+        {
+            if (hero.heroRenderer?.heroMc != null)
+            {
+                Utils.resetColor(hero.heroRenderer.heroMc);
+            }
+            else if (hero.heroRenderer?.heroContainerMc != null)
+            {
+                Utils.resetColor(hero.heroRenderer.heroContainerMc);
+            }
+        }
+
         private static void ResetPlayerColor()
         {
             var gameScene = GameScene.instance;
             if (gameScene == null || gameScene.heroManager == null)
                 return;
-
-            float randomHue = UnityEngine.Random.value;
-            Color randomColor = Color.HSVToRGB(randomHue, 1f, 1f);
 
             var actorList = gameScene.heroManager.actorList;
             if (actorList == null) return;
@@ -181,7 +193,7 @@ namespace jsb_new
                 var hero = actorList[i]?.TryCast<Hero>();
                 if (hero != null)
                 {
-                    ApplyColorToHero(hero, randomColor);
+                    ResetColorOfHero(hero);
                 }
             }
         }

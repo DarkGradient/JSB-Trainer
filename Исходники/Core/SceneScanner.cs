@@ -7,6 +7,11 @@ namespace jsb_new
 {
     public static class SceneScanner
     {
+        public static void Initialize()
+        {
+            ModuleRegistry.RegisterButton("Scan Scene (Deep Dump)", Scan);
+        }
+
         public static void Update()
         {
             if (Input.GetKeyDown(KeyCode.I))
@@ -15,7 +20,7 @@ namespace jsb_new
             }
         }
 
-        private static void Scan()
+        public static void Scan()
         {
             try
             {
