@@ -11,12 +11,12 @@ namespace jsb_new
         public const string FADE_SLIDER_NAME = "[DEBUG] HD Delay";
 
         // Настройки по умолчанию
-        private static float _visibleDuration = 0.75f; // Дефолтное значение задержки (0.75)
-        private static float _fadeDuration = 0.30f;    // Длительность плавного перехода
+        private static float _visibleDuration = 1.00f; // Дефолтное значение задержки (0.75)
+        private static float _fadeDuration = 0.60f;    // Длительность плавного перехода
 
         // Настройки для функции Recall (Клавиша V)
-        private const float RECALL_DURATION = 0.50f;   // Длительность проявления (0.5 сек)
-        private const float RECALL_COOLDOWN = 1.00f;   // Кулдаун (1.0 сек)
+        private const float RECALL_DURATION = 1.00f;   // Длительность проявления (0.5 сек)
+        private const float RECALL_COOLDOWN = 0.35f;   // Кулдаун (1.0 сек)
         private static float _lastRecallTriggerTime = -100f;
         private static float _currentRecallAlpha = 0f;
 

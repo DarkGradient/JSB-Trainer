@@ -43,6 +43,9 @@ namespace jsb_new
             Item("Enemy Color");
             Item("Tornado / Spin Mode");
             Item("Spin Speed");
+            Header("Construction Anim");
+            Item("Restore Small Construction Squares");
+            Item("Construction Square Size");
 
             // --- ВКЛАДКА 2: ГЕЙМПЛЕЙ ---
             Tab("Геймплей");
@@ -63,6 +66,8 @@ namespace jsb_new
             // --- ВКЛАДКА 3: ПРОЧЕЕ ---
             Tab("Прочее");
             Header("Система и Графика");
+            Item("Ускорить UI-анимации");
+            Item("UI Anim Speed x");
             Item("Enable Audio Visualizer");
             Item("Always black BG");
             Item("Hide Timeline");
@@ -75,7 +80,23 @@ namespace jsb_new
             Item("[DEBUG] Hidden Mode");
             Item("[DEBUG] Full Invisibility");
             Item("[DEBUG] HD Delay");
-            Item("Scan Scene (Deep Dump)");
+
+            Tab("ПИЗДЕЦ");
+            Header("Модуль Хаоса");
+            Item("PIZDEC (Force End Level)");
+            Spacer();
+            Item("Earthquake Mode");
+            Item("Earthquake Force");
+            Spacer();
+            Item("Dash Mines");
+            Spacer();
+            Item("Custom Player Scale");
+            Item("Player Scale Value");
+            Spacer();
+            Item("Spawn Fake Ghost");
+            Item("Oscillating Camera");
+            Item("Cam Pan Speed");
+            Item("Cam Pan Distance");
         }
 
         public static IReadOnlyList<Entry> GetEntries() => _layout;

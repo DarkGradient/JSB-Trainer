@@ -21,7 +21,7 @@ namespace jsb_new
         public static bool BLOCK_F7_MP_VOTE              = true;  // F7 — хост: принудительный vote
         public static bool BLOCK_F8_SCREEN_PREV          = true;  // F8 — предыдущий экран + сейв
         public static bool BLOCK_F9_VSYNC_TOGGLE         = true;  // F9 — переключение vsync
-        public static bool BLOCK_F10_SKIP_TO_END         = true;  // F10 — перемотка музыки в конец
+        public static bool BLOCK_F10_SKIP_TO_END         = false;  // F10 — перемотка музыки в конец
         public static bool BLOCK_DELETE_HARD_KILL        = true;  // DELETE — hardKillGame
         public static bool BLOCK_CLEAR_SAVE              = true;  // C+L+E+A+R — полный Clear() сейва
         public static bool BLOCK_NUMPAD_ADD_SKIP         = true;  // Numpad+ — скип чекпоинтов
