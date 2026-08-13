@@ -47,6 +47,31 @@ namespace jsb_new
             Item("Restore Small Construction Squares");
             Item("Construction Square Size");
 
+            Item("Deltarune Grid BG");
+
+            Header("Grid Layout");
+            Item("DG Cell Size");
+            Item("DG Line Thickness");
+            Item("DG Lines X");
+            Item("DG Lines Y");
+
+            Header("Grid Movement");
+            Item("DG Speed X1");
+            Item("DG Speed Y1");
+            Item("DG Speed X2");
+            Item("DG Speed Y2");
+
+            Header("Grid Colors");
+            Item("DG Alpha 1");
+            Item("DG Alpha 2");
+            Item("DG Color R");
+            Item("DG Color G");
+            Item("DG Color B");
+
+            Header("Grid Render");
+            Item("DG Sorting Order");
+            Item("DG Pos Z");
+
             // --- ВКЛАДКА 2: ГЕЙМПЛЕЙ ---
             Tab("Геймплей");
             Header("Модификаторы");
@@ -66,8 +91,6 @@ namespace jsb_new
             // --- ВКЛАДКА 3: ПРОЧЕЕ ---
             Tab("Прочее");
             Header("Система и Графика");
-            Item("Ускорить UI-анимации");
-            Item("UI Anim Speed x");
             Item("Enable Audio Visualizer");
             Item("Always black BG");
             Item("Hide Timeline");
@@ -81,22 +104,6 @@ namespace jsb_new
             Item("[DEBUG] Full Invisibility");
             Item("[DEBUG] HD Delay");
 
-            Tab("ПИЗДЕЦ");
-            Header("Модуль Хаоса");
-            Item("PIZDEC (Force End Level)");
-            Spacer();
-            Item("Earthquake Mode");
-            Item("Earthquake Force");
-            Spacer();
-            Item("Dash Mines");
-            Spacer();
-            Item("Custom Player Scale");
-            Item("Player Scale Value");
-            Spacer();
-            Item("Spawn Fake Ghost");
-            Item("Oscillating Camera");
-            Item("Cam Pan Speed");
-            Item("Cam Pan Distance");
         }
 
         public static IReadOnlyList<Entry> GetEntries() => _layout;
