@@ -27,7 +27,7 @@ namespace jsb_new
         private const int DEFAULT_SPIKE = 140;
         private const int DEFAULT_CHALLENGE = 100; // FxConstructionSquareWallChallengeAnim (Arcade/Challenge конец уровня)
 
-        public static bool Enabled = true;
+        public static bool Enabled = false;
 
         // "Размер игрока" — подстройте слайдером в меню под свой вкус,
         // 16-20 обычно и даёт тот самый плотный ковёр мелких клеток
