@@ -99,6 +99,25 @@ namespace jsb_new
             Item("Focus Speed Multiplier");
             Item("Force Rewind Music");
 
+            Tab("Host");
+            Header("Только для хоста MP");
+            Item("Host Tools");
+            Item("HT Force Start Run");
+            Item("HT Force Vote (Tuto)");
+            Item("HT Skip Lobby Timer");
+            Item("HT Force Game Started");
+            Item("HT Force Checkpoint");
+            Item("HT Rewind (1 left)");
+            Item("HT Rewind (3 left)");
+            Item("HT Rewind (0 = SD)");
+            Item("HT Force End Level");
+            Item("HT Resurrect All (local)");
+            Item("HT Kill All Heroes (local)");
+            Item("HT Kill All Online Heroes");
+            Item("HT Sudden Death (0 rewind)");
+            Item("HT Mercy +1 Rewind");
+            Item("HT Spam Vote Tuto");
+
             Tab("DEBUG");
             Item("[DEBUG] Hidden Mode");
             Item("[DEBUG] Full Invisibility");

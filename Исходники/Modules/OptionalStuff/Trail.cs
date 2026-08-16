@@ -7,6 +7,7 @@ namespace jsb_new
     public static class Trail
     {
         private const string FEATURE_NAME = "Full Power Trail";
+        private static bool _hasApplied;
 
         public static void Initialize(HarmonyLib.Harmony harmony)
         {
@@ -23,10 +24,16 @@ namespace jsb_new
                                                     1.5f
                                                 );
 
-                                                if (!enabled)
+                                                if (enabled)
+                                                {
+                                                    _hasApplied = true;
+                                                }
+                                                else if (_hasApplied)
                                                 {
                                                     ResetPlayerParticles();
+                                                    _hasApplied = false;
                                                 }
+                                                // если выключен и никогда не включали — ничего не делаем
                                             }
             );
 

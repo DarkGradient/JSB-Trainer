@@ -179,17 +179,25 @@ namespace jsb_new
             var canvasRect = _canvasObject.GetComponent<RectTransform>();
             canvasRect.sizeDelta = new Vector2(1280f, 720f);
 
+            // сброс оффсетов при ребилде — иначе кратный сдвиг плывёт
+            _offsetX1 = _offsetY1 = _offsetX2 = _offsetY2 = 0f;
+
             Color c1 = new Color(ColorR, ColorG, ColorB, Alpha1);
             Color c2 = new Color(ColorR * 0.8f, ColorG * 0.8f, ColorB * 0.9f, Alpha2);
 
             _container1 = BuildGridContainer("Grid1", c1);
             _container2 = BuildGridContainer("Grid2", c2);
-
-            DebugStrings.Log("[DeltaruneGrid] Dual grid created");
         }
 
         private static RectTransform BuildGridContainer(string name, Color color)
         {
+            // сколько клеток нужно, чтобы закрыть экран + запас под wrap
+            int linesX = Mathf.CeilToInt(1280f / CellSize) + 4;
+            int linesY = Mathf.CeilToInt(720f / CellSize) + 4;
+
+            float gridW = linesX * CellSize;
+            float gridH = linesY * CellSize;
+
             GameObject container = new GameObject(name);
             container.layer = 0;
             container.transform.SetParent(_canvasObject!.transform, false);
@@ -198,26 +206,24 @@ namespace jsb_new
             rect.anchorMin = new Vector2(0.5f, 0.5f);
             rect.anchorMax = new Vector2(0.5f, 0.5f);
             rect.pivot = new Vector2(0.5f, 0.5f);
-            rect.sizeDelta = new Vector2(1280f + CellSize * 2f, 720f + CellSize * 2f);
+            rect.sizeDelta = new Vector2(gridW, gridH);
             rect.anchoredPosition = Vector2.zero;
 
-            float totalW = CellSize * GridLinesX;
-            float startX = -totalW * 0.5f;
-            for (int i = 0; i <= GridLinesX; i++)
+            float startX = -gridW * 0.5f;
+            for (int i = 0; i <= linesX; i++)
             {
                 MakeLine(container.transform, $"V_{i}",
                          new Vector2(startX + i * CellSize, 0f),
-                         new Vector2(LineThickness, 720f + CellSize * 2f),
+                         new Vector2(LineThickness, gridH + CellSize),
                          color);
             }
 
-            float totalH = CellSize * GridLinesY;
-            float startY = -totalH * 0.5f;
-            for (int i = 0; i <= GridLinesY; i++)
+            float startY = -gridH * 0.5f;
+            for (int i = 0; i <= linesY; i++)
             {
                 MakeLine(container.transform, $"H_{i}",
                          new Vector2(0f, startY + i * CellSize),
-                         new Vector2(1280f + CellSize * 2f, LineThickness),
+                         new Vector2(gridW + CellSize, LineThickness),
                          color);
             }
 
