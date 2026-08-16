@@ -14,11 +14,13 @@ namespace jsb_new
             {
                 if (ModuleRegistry.IsActive("HitboxRenderer") == value) return;
                 ModuleRegistry.SetActive("HitboxRenderer", value);
+
+                // ВЕРНУЛИ НА МЕСТО: Без этого флага игра тупо не вызывает drawCircle() и drawRectangle()
                 VersionInfo.DEBUG_FORCE_ALL_COLLISIONS_VISIBLE = value;
+
                 DebugStrings.Log($"Hitboxes: {(value ? "ON" : "OFF")}");
 
-                if (!value)
-                    Cleanup();
+                if (!value) Cleanup();
             }
         }
 
@@ -64,17 +66,14 @@ namespace jsb_new
                 if (manageColMethod != null)
                     harmony.Patch(manageColMethod, new HarmonyMethod(typeof(HitboxRenderer), nameof(OnManageCol)));
 
-                ModuleRegistry.RegisterCheckbox("Hitboxes",
-                                                () => Enabled,
-                                                (newValue) => { Enabled = newValue; }
-                );
+                ModuleRegistry.RegisterCheckbox("Hitboxes", () => Enabled, (newValue) => { Enabled = newValue; });
 
                 HUDManager.CreateHUD(
                     key: "HitboxRenderer",
                     textGetter: () => "HITBOXES VISIBLE",
                                      baseColor: Color.white,
                                      pulseColor: Color.yellow,
-                                     activeGetter: () => Enabled, // <-- сюда прокидывается актуальное состояние автоматически
+                                     activeGetter: () => Enabled,
                                      height: 35f
                 );
 
@@ -100,11 +99,7 @@ namespace jsb_new
 
         public static void Update()
         {
-            if (Input.GetKeyDown(KeyCode.H))
-            {
-                Enabled = !Enabled;
-            }
-
+            if (Input.GetKeyDown(KeyCode.H)) Enabled = !Enabled;
             if (!Enabled)
             {
                 if (_lines.Count > 0) _lines.Clear();
@@ -120,26 +115,19 @@ namespace jsb_new
             var mainGame = MainGame.instance;
             if (mainGame == null) return;
             var scene = mainGame.gameSceneManager?.gameScene;
-            if (scene == null) return;
+            if (scene?.heroManager?.actorList == null) return;
 
-            var actorList = scene.heroManager?.actorList;
-            if (actorList == null) return;
-
+            var actorList = scene.heroManager.actorList;
             for (int i = 0; i < actorList.Count; i++)
             {
-                var actor = actorList[i];
-                if (actor == null) continue;
-
-                var hero = actor.TryCast<Hero>();
+                var hero = actorList[i]?.TryCast<Hero>();
                 if (hero == null) continue;
 
                 var enemyComp = hero.circleColComponentEnemy;
-                if (enemyComp?.circleCol != null && enemyComp.enabled)
-                    DrawCircleComponent(enemyComp, enemyComp.circleCol);
+                if (enemyComp?.circleCol != null && enemyComp.enabled) DrawCircleComponent(enemyComp, enemyComp.circleCol);
 
                 var itemComp = hero.circleColComponentItem;
-                if (itemComp?.circleCol != null && itemComp.enabled)
-                    DrawCircleComponent(itemComp, itemComp.circleCol);
+                if (itemComp?.circleCol != null && itemComp.enabled) DrawCircleComponent(itemComp, itemComp.circleCol);
             }
         }
 
@@ -148,10 +136,9 @@ namespace jsb_new
             var cam = CameraFlash.mainCamera;
             if (cam == null || comp.actor == null) return;
 
-            var actor = comp.actor;
-            float flashX = actor.px + c.x;
-            float flashY = (actor.py + c.y) * -1f;
-            float offset = (cam.px - (cam.actorForTransform?.px ?? 0f)) * 2f;
+            float flashX = comp.actor.px + c.x;
+            float flashY = (comp.actor.py + c.y) * -1f;
+            float offset = (cam.actorForTransform != null) ? (cam.px - cam.actorForTransform.px) * 2f : 0f;
 
             Point p = cam.getCoordInWorld(flashX + 640f, flashY + 360f);
             AddCircle(p.x - offset, p.y, c.radius);
@@ -160,10 +147,7 @@ namespace jsb_new
         private static void RenderLines()
         {
             if (_lines.Count == 0) return;
-
-            if (!_resourcesReady)
-                InitResources();
-
+            if (!_resourcesReady) InitResources();
             if (_lineMesh == null || _lineMaterial == null) return;
 
             int vertexCount = _lines.Count * 2;
@@ -185,8 +169,7 @@ namespace jsb_new
             _lineMesh.SetIndices(_indexBuffer, 0, vertexCount, MeshTopology.Lines, 0, false);
 
             var cam = Camera.main ?? UnityEngine.Object.FindObjectOfType<Camera>();
-            if (cam != null)
-                Graphics.DrawMesh(_lineMesh, Vector3.zero, Quaternion.identity, _lineMaterial, 0, cam);
+            if (cam != null) Graphics.DrawMesh(_lineMesh, Vector3.zero, Quaternion.identity, _lineMaterial, 0, cam);
 
             _lines.Clear();
         }
@@ -195,11 +178,7 @@ namespace jsb_new
         {
             try
             {
-                _lineMesh = new Mesh
-                {
-                    hideFlags = HideFlags.HideAndDontSave,
-                    bounds = new Bounds(Vector3.zero, new Vector3(100000f, 100000f, 100000f))
-                };
+                _lineMesh = new Mesh { hideFlags = HideFlags.HideAndDontSave, bounds = new Bounds(Vector3.zero, new Vector3(100000f, 100000f, 100000f)) };
                 _lineMesh.MarkDynamic();
 
                 _indexBuffer = new int[50000];
@@ -208,10 +187,7 @@ namespace jsb_new
                 var shader = Shader.Find("Hidden/Internal-Colored") ?? Shader.Find("Sprites/Default");
                 if (shader == null) throw new Exception("Shader not found");
 
-                _lineMaterial = new Material(shader)
-                {
-                    hideFlags = HideFlags.HideAndDontSave
-                };
+                _lineMaterial = new Material(shader) { hideFlags = HideFlags.HideAndDontSave };
                 _lineMaterial.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
                 _lineMaterial.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
                 _lineMaterial.SetInt("_Cull", (int)UnityEngine.Rendering.CullMode.Off);
@@ -245,7 +221,6 @@ namespace jsb_new
         private static void AddCircle(float cx, float cy, float radius)
         {
             if (radius <= 0f) return;
-
             Vector3 prev = new Vector3(cx + CirclePoints[0].x * radius, cy + CirclePoints[0].y * radius, 0f);
             for (int i = 1; i <= CircleSegments; i++)
             {
@@ -272,6 +247,7 @@ namespace jsb_new
             AddLine(a - perp, b - perp);
         }
 
+        // --- Возвращаем false, чтобы скрыть оригинальный кривой рендер игры ---
         public static bool OnDrawCircle(CollisionCircleComponent __instance, Circle c)
         {
             if (!Enabled || c == null) return false;
@@ -281,12 +257,10 @@ namespace jsb_new
                 if (cam == null) return false;
                 float localY = c.y * -1f;
                 Point p = cam.getCoordInWorld(c.x + 640f, localY + 360f);
-                float offset = 0f;
-                if (cam.actorForTransform != null)
-                    offset = (cam.px - cam.actorForTransform.px) * 2f;
+                float offset = (cam.actorForTransform != null) ? (cam.px - cam.actorForTransform.px) * 2f : 0f;
                 AddCircle(p.x - offset, p.y, c.radius);
             }
-            catch (Exception ex) { MelonLogger.Error($"[Hitbox] OnDrawCircle error: {ex.Message}"); }
+            catch { }
             return false;
         }
 
@@ -301,22 +275,12 @@ namespace jsb_new
                 float localVY = vy * -1f;
 
                 Point p1Raw = cam.getCoordInWorld(c.x + 640f, localY + 360f);
-                float p1x = p1Raw.x;
-                float p1y = p1Raw.y;
-
                 Point p2Raw = cam.getCoordInWorld(c.x + vx + 640f, localY + localVY + 360f);
-                float p2x = p2Raw.x;
-                float p2y = p2Raw.y;
 
-                float offset = 0f;
-                if (cam.actorForTransform != null)
-                    offset = (cam.px - cam.actorForTransform.px) * 2f;
-
-                Vector3 a = new Vector3(p1x - offset, p1y, 0f);
-                Vector3 b = new Vector3(p2x - offset, p2y, 0f);
-                AddCapsule(a, b, c.radius);
+                float offset = (cam.actorForTransform != null) ? (cam.px - cam.actorForTransform.px) * 2f : 0f;
+                AddCapsule(new Vector3(p1Raw.x - offset, p1Raw.y, 0f), new Vector3(p2Raw.x - offset, p2Raw.y, 0f), c.radius);
             }
-            catch (Exception ex) { MelonLogger.Error($"[Hitbox] OnDrawCircleWithVelocity error: {ex.Message}"); }
+            catch { }
             return false;
         }
 
@@ -329,9 +293,7 @@ namespace jsb_new
                 if (cam == null) return false;
                 float localY = y * -1f;
                 Point p = cam.getCoordInWorld(x + 640f, localY + 360f);
-                float offset = 0f;
-                if (cam.actorForTransform != null)
-                    offset = (cam.px - cam.actorForTransform.px) * 2f;
+                float offset = (cam.actorForTransform != null) ? (cam.px - cam.actorForTransform.px) * 2f : 0f;
 
                 float wx = p.x - offset;
                 float wy = p.y;
@@ -344,18 +306,14 @@ namespace jsb_new
                 corners[2] = RotatePoint(halfW, halfH, rot);
                 corners[3] = RotatePoint(-halfW, halfH, rot);
 
-                for (int i = 0; i < 4; i++)
-                {
-                    corners[i].x += wx;
-                    corners[i].y += wy;
-                }
+                for (int i = 0; i < 4; i++) { corners[i].x += wx; corners[i].y += wy; }
 
                 AddLine(new Vector3(corners[0].x, corners[0].y, 0f), new Vector3(corners[1].x, corners[1].y, 0f));
                 AddLine(new Vector3(corners[1].x, corners[1].y, 0f), new Vector3(corners[2].x, corners[2].y, 0f));
                 AddLine(new Vector3(corners[2].x, corners[2].y, 0f), new Vector3(corners[3].x, corners[3].y, 0f));
                 AddLine(new Vector3(corners[3].x, corners[3].y, 0f), new Vector3(corners[0].x, corners[0].y, 0f));
             }
-            catch (Exception ex) { MelonLogger.Error($"[Hitbox] OnDrawRectangle error: {ex.Message}"); }
+            catch { }
             return false;
         }
 
@@ -366,7 +324,6 @@ namespace jsb_new
             {
                 var rectLines = __instance.rectLines;
                 if (rectLines == null) return true;
-
                 rectLines.calculate(d.transform.concatenedMatrix);
 
                 AddLine(new Vector3(rectLines.l1.x1, rectLines.l1.y1, 0f), new Vector3(rectLines.l1.x2, rectLines.l1.y2, 0f));
@@ -374,7 +331,7 @@ namespace jsb_new
                 AddLine(new Vector3(rectLines.l3.x1, rectLines.l3.y1, 0f), new Vector3(rectLines.l3.x2, rectLines.l3.y2, 0f));
                 AddLine(new Vector3(rectLines.l4.x1, rectLines.l4.y1, 0f), new Vector3(rectLines.l4.x2, rectLines.l4.y2, 0f));
             }
-            catch (Exception ex) { MelonLogger.Error($"[Hitbox] OnManageCol error: {ex.Message}"); }
+            catch { }
             return true;
         }
 
@@ -386,11 +343,6 @@ namespace jsb_new
             return new Vector2(cos * x - sin * y, sin * x + cos * y);
         }
 
-        private struct Line
-        {
-            public Vector3 A;
-            public Vector3 B;
-            public Color32 Color;
-        }
+        private struct Line { public Vector3 A; public Vector3 B; public Color32 Color; }
     }
 }

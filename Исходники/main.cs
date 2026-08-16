@@ -1,5 +1,7 @@
-﻿using MelonLoader;
-[assembly: MelonInfo(typeof(jsb_new.Main), "JSAB Extra Stuff", "3.0.0", "dveroeb")]
+﻿// Точка входа
+using MelonLoader;
+
+[assembly: MelonInfo(typeof(jsb_new.Main), "JSAB Extra Stuff", "4.1.0", "dveroeb")]
 [assembly: MelonGame(null, null)]
 
 namespace jsb_new
@@ -13,12 +15,9 @@ namespace jsb_new
             _harmony = new HarmonyLib.Harmony("com.dveroeb.jsb_extra_stuff");
 
             ModuleRegistry.InitializeAll(_harmony);
-            UI.BuildSettingsMenu(_harmony);
+            SettingsMenu.Initialize();
 
-            LoggerInstance.Msg("==== INIT. IMGUI Settings ready (K to open).");
-            // LoggerInstance.Msg($"[jsb_new] Unity version: {Application.unityVersion}");
-            // LoggerInstance.Msg($"[jsb_new] App version: {Application.version}");
-            // LoggerInstance.Msg($"[jsb_new] Platform: {Application.platform}");
+            LoggerInstance.Msg("==== INIT: JSAB Extra Stuff Ready (Press K for Settings) ====");
         }
 
         public override void OnUpdate() => ModuleRegistry.UpdateAll();

@@ -1,4 +1,3 @@
-// Менеджер настроек, конфига и фич
 using System.Reflection;
 using MelonLoader;
 
@@ -7,7 +6,7 @@ namespace jsb_new
     public static class ModuleRegistry
     {
         private static readonly MelonPreferences_Category _prefCategory =
-            MelonPreferences.CreateCategory("JSAB_ExtraStuff", "JS&B Extra Stuff Settings");
+        MelonPreferences.CreateCategory("JSAB_ExtraStuff", "JS&B Extra Stuff Settings");
 
         private static readonly Dictionary<string, bool> _states = new Dictionary<string, bool>();
 
@@ -23,7 +22,7 @@ namespace jsb_new
 
             foreach (var type in assembly.GetTypes())
             {
-                if (type.Name == "Main" || type.Name == "ModuleRegistry")
+                if (type.Name == "Main" || type.Name == "ModuleRegistry" || type.Name == "TrainerSettingsBuilder" || type.Name == "UI")
                     continue;
 
                 try
@@ -65,7 +64,7 @@ namespace jsb_new
             public string Name { get; set; } = null!;
             public Func<bool> Getter { get; set; } = null!;
             public Action<bool> Setter { get; set; } = null!;
-            public bool DefaultValue { get; set; }
+            public bool DefaultValue { get; set; } // <--- ДОБАВЛЕНО ПОЛЕ ДЕФОЛТА
             public Func<bool>? IsLocked { get; set; }
         }
 
@@ -93,14 +92,16 @@ namespace jsb_new
             Buttons.Add(new ButtonDef { Name = name, OnClick = onClick });
         }
 
+        // Исправленная регистрация чекбоксов (принимает дефолтное значение)
         public static void RegisterCheckbox(
             string name,
             Func<bool> getter,
             Action<bool> setter,
-            bool defaultValue = false,
+            bool defaultValue = false, // <--- ДОБАВЛЕН ПАРАМЕТР
             Func<bool>? isLocked = null)
         {
             string key = name.Replace(" ", "_");
+
             var entry = _prefCategory.CreateEntry(key, defaultValue, name);
             bool loadedValue = entry.Value;
 
@@ -114,7 +115,9 @@ namespace jsb_new
 
             Action<bool> autoSavingSetter = (newValue) =>
             {
-                if (newValue && isLocked != null && isLocked()) return;
+                if (newValue && isLocked != null && isLocked())
+                    return;
+
                 setter(newValue);
                 entry.Value = newValue;
                 _prefCategory.SaveToFile(false);
@@ -125,19 +128,26 @@ namespace jsb_new
                 Name = name,
                 Getter = getter,
                 Setter = autoSavingSetter,
-                DefaultValue = defaultValue,
+                DefaultValue = defaultValue, // <--- ЗАПОМИНАЕМ НАСТОЯЩИЙ ДЕФОЛТ
                 IsLocked = isLocked
             });
         }
 
-        public static void RegisterCheckbox(string name, Func<bool> getter, Action<bool> setter, Func<bool>? isLocked)
+        // Перегрузка для старого синтаксиса без параметров
+        public static void RegisterCheckbox(
+            string name,
+            Func<bool> getter,
+            Action<bool> setter,
+            Func<bool>? isLocked)
         {
             RegisterCheckbox(name, getter, setter, false, isLocked);
         }
 
+        // Исправленная регистрация слайдеров
         public static void RegisterSlider(string name, float minValue, float maxValue, float defaultValue, Action<float> onChanged)
         {
             string key = name.Replace(" ", "_");
+
             var entry = _prefCategory.CreateEntry(key, defaultValue, name);
             onChanged(entry.Value);
 
@@ -153,7 +163,7 @@ namespace jsb_new
                 Name = name,
                 MinValue = minValue,
                 MaxValue = maxValue,
-                DefaultValue = defaultValue,
+                DefaultValue = defaultValue, // <--- ФИКС: Запоминаем код-дефолт, а не загруженное значение!
                 OnChanged = autoSavingOnChanged
             });
         }

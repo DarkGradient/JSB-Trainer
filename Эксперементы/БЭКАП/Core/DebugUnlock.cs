@@ -17,7 +17,7 @@ namespace jsb_new
         public static void OnInit()
         {
             VersionInfo.isDebug = true;
-            VersionInfo.isFastSkip = true;
+            // VersionInfo.isFastSkip = true; <--- ВЫРЕЗАНО: пропускало колбэки удаления атак!
         }
     }
 }
